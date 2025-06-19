@@ -10,6 +10,10 @@
     <script type="text/javascript" src="https://golden-layout.com/files/latest/js/goldenlayout.min.js"></script>
     <!-- Monaco Editor loader -->
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+    <!-- xterm.js -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css">
+    <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.min.js"></script>
+
     <style>
         body {
             margin: 0;
@@ -145,8 +149,29 @@ public class Greeter {
         });
 
         layout.registerComponent('console', function(container, state) {
-            container.getElement().html('<pre id="logWindow" class="log-content"></pre>');
+            container.getElement().html('<div id="logWindow"  class="log-content" style="width:100%;height:100%;"></div>');
+
+            const term = new Terminal({
+                cursorBlink: true,
+                fontFamily: 'monospace',
+                theme: {
+                    background: '#222',
+                    foreground: '#eee'
+                }
+            });
+            term.open(container.getElement().find('#logWindow')[0]);
+
+            // 将 SSE 日志写入终端
+            var logSource = new EventSource('/log/stream');
+            logSource.onmessage = function(e) {
+                let message = e.data;
+                if (message.endsWith('\n')) {
+                    message = message.slice(0, -1); // 去掉末尾换行
+                }
+                term.write(message);
+            };
         });
+
 
         // 初始化布局
         layout.init();
@@ -181,8 +206,10 @@ public class Greeter {
             $('#logWindow').text('');
         });
 
+
+
         // 实时日志SSE
-        var logSource = new EventSource('/log/stream');
+       /* var logSource = new EventSource('/log/stream');
         logSource.onmessage = function(e) {
             var logWindow = $('#logWindow');
             var message =   e.data.replace("\\r","\r").replace("\\n","\n");
@@ -190,7 +217,7 @@ public class Greeter {
             console.log("返回 ",e.data)
 
             logWindow.scrollTop(logWindow[0].scrollHeight);
-        };
+        };*/
     </script>
 </body>
 </html> 

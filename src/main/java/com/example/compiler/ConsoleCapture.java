@@ -50,8 +50,8 @@ public class ConsoleCapture {
     private static void broadcastToEmitters(String message) {
         for (SseEmitter emitter : emitters) {
             try {
-                message=  message.replace("\n", "\\n");
-                message= message.replace("\r", "\\r");
+                //message=  message.replace("\n", "\\n");
+                //message= message.replace("\r", "\\r");
                 emitter.send(message);
             } catch (IOException e) {
                 emitters.remove(emitter);

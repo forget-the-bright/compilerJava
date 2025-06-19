@@ -21,7 +21,10 @@ public class SseLogbackAppender extends AppenderBase<ILoggingEvent> {
         String msg = event.getFormattedMessage();
         for (SseEmitter emitter : emitters) {
             try {
-                emitter.send(msg + "\n");
+               // msg=  msg.replace("\n", "\\n");
+               // msg= msg.replace("\r", "\\r");
+              //  msg= msg.replace("\t", "\\t");
+                emitter.send(msg+"\n");
             } catch (IOException e) {
                 emitters.remove(emitter);
             }
