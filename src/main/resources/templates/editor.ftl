@@ -12,56 +12,8 @@
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
     <!-- xterm.js -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css">
-    <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.min.js"></script>
-
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
-        .toolbar {
-            height: 40px;
-            background: #f3f3f3;
-            border-bottom: 1px solid #ddd;
-            padding: 5px 15px;
-            display: flex;
-            align-items: center;
-        }
-        #layout-container {
-            position: absolute;
-            top: 40px;
-            left: 0;
-            right: 0;
-            bottom: 0;
-        }
-        .log-content {
-            background: #222;
-            color: #eee;
-            padding: 10px;
-            font-family: monospace;
-            height: 100%;
-            overflow: auto;
-            margin: 0;
-        }
-        .toolbar button {
-            padding: 6px 12px;
-            margin-right: 10px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .toolbar button:hover {
-            background: #0056b3;
-        }
-        .monaco-editor-container {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-    </style>
+<#--    <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.min.js"></script>-->
+    <link rel="stylesheet" href="/complier/css/style.css">
 </head>
 <body>
     <div class="toolbar">
@@ -70,7 +22,10 @@
     </div>
     <div id="layout-container"></div>
 
-    <script>
+    <script type="module">
+        import {Terminal} from 'https://esm.sh/xterm@5.3.0'
+        import { FitAddon } from 'https://esm.sh/xterm-addon-fit@0.6.0';
+
         var editor;
         var layout;
         
@@ -148,31 +103,49 @@ public class Greeter {
             container.getElement().html('<pre id="result" class="log-content"></pre>');
         });
 
+        const term = new Terminal({
+            cursorBlink: true,
+            fontFamily: 'monospace',
+            theme: {
+                background: '#222',
+                foreground: '#eee'
+            }
+        });
+        const fitAddon = new FitAddon();
+        term.loadAddon(fitAddon);
+
         layout.registerComponent('console', function(container, state) {
-            container.getElement().html('<div id="logWindow"  class="log-content" style="width:100%;height:100%;"></div>');
-
-            const term = new Terminal({
-                cursorBlink: true,
-                fontFamily: 'monospace',
-                theme: {
-                    background: '#222',
-                    foreground: '#eee'
-                }
-            });
+            container.getElement().html('<pre id="logWindow"  class="log-content" ></pre>');
             term.open(container.getElement().find('#logWindow')[0]);
-
-            // 将 SSE 日志写入终端
-            var logSource = new EventSource('/log/stream');
-            logSource.onmessage = function(e) {
-                let message = e.data;
-                if (message.endsWith('\n')) {
-                    message = message.slice(0, -1); // 去掉末尾换行
-                }
-                term.write(message);
-            };
+            fitAddon.fit();
         });
 
 
+        // 监听窗口大小变化，自动调整终端尺寸
+        $(window).resize(function() {
+            try {
+                fitAddon.fit();
+            } catch (e) {}
+        });
+
+        // 同时监听 Golden Layout 的更新事件
+        layout.on('stateChanged', function () {
+            setTimeout(() => fitAddon.fit(), 200); // 延迟确保 DOM 已更新
+        });
+
+        // 将 SSE 日志写入终端
+        var logSource = new EventSource('/complier/log/stream');
+        logSource.onmessage = function(e) {
+            let message = e.data;
+            message = base64ToUtf8( message);
+            term.write(message);
+        };
+
+        function base64ToUtf8(base64) {
+            return decodeURIComponent(Array.prototype.map.call(atob(base64), function(c) {
+                return '%' + c.charCodeAt(0).toString(16).padStart(2, '0');
+            }).join(''));
+        }
         // 初始化布局
         layout.init();
 
@@ -188,7 +161,7 @@ public class Greeter {
         // 编译按钮事件
         $('#compileSseBtn').click(function() {
             $('#result').text('');
-            var eventSource = new EventSource('/compile/sse?code=' + encodeURIComponent(getCode()), {
+            var eventSource = new EventSource('/complier/compile/sse?code=' + encodeURIComponent(getCode()), {
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
             });
             eventSource.onmessage = function(e) {
@@ -203,7 +176,7 @@ public class Greeter {
         // 清除日志按钮事件
         $('#clearLogsBtn').click(function() {
             $('#result').text('');
-            $('#logWindow').text('');
+            term.clear();
         });
 
 

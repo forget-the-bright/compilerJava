@@ -1,7 +1,7 @@
 package com.example.compiler;
 
+import com.example.compiler.config.ConsoleCapture;
 import org.hao.spring.SpringRunUtil;
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication

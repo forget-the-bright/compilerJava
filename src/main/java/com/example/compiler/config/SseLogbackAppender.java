@@ -1,9 +1,12 @@
-package com.example.compiler;
+package com.example.compiler.config;
 
 import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import cn.hutool.core.codec.Base64;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -21,10 +24,8 @@ public class SseLogbackAppender extends AppenderBase<ILoggingEvent> {
         String msg = event.getFormattedMessage();
         for (SseEmitter emitter : emitters) {
             try {
-               // msg=  msg.replace("\n", "\\n");
-               // msg= msg.replace("\r", "\\r");
-              //  msg= msg.replace("\t", "\\t");
-                emitter.send(msg+"\n");
+                String encodeMsg = Base64.encode(msg, Charset.forName("UTF-8"));
+                emitter.send(encodeMsg);
             } catch (IOException e) {
                 emitters.remove(emitter);
             }

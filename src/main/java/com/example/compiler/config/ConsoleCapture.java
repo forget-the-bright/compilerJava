@@ -1,7 +1,10 @@
-package com.example.compiler;
+package com.example.compiler.config;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import cn.hutool.core.codec.Base64;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 public class ConsoleCapture {
@@ -50,9 +53,8 @@ public class ConsoleCapture {
     private static void broadcastToEmitters(String message) {
         for (SseEmitter emitter : emitters) {
             try {
-                //message=  message.replace("\n", "\\n");
-                //message= message.replace("\r", "\\r");
-                emitter.send(message);
+                String encodeMsg = Base64.encode(message, Charset.forName("UTF-8"));
+                emitter.send(encodeMsg);
             } catch (IOException e) {
                 emitters.remove(emitter);
             }

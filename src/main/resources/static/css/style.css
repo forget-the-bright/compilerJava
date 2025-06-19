@@ -1,0 +1,46 @@
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+.toolbar {
+    height: 40px;
+    background: #f3f3f3;
+    border-bottom: 1px solid #ddd;
+    padding: 5px 15px;
+    display: flex;
+    align-items: center;
+}
+#layout-container {
+    position: absolute;
+    top: 40px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+.log-content {
+    background: #222;
+    color: #eee;
+    padding: 10px;
+    font-family: monospace;
+    height: 100%;
+    overflow: auto;
+    margin: 0;
+}
+.toolbar button {
+    padding: 6px 12px;
+    margin-right: 10px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.toolbar button:hover {
+    background: #0056b3;
+}
+.monaco-editor-container {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}

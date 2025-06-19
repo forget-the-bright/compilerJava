@@ -1,0 +1,15 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /complier
+spring:
+  freemarker:
+   template-loader-path: classpath:/templates/
+   suffix: .ftl
+   charset: UTF-8
+   cache: false
+  web:
+    resources:
+      static-locations: classpath:/static/
+
+
