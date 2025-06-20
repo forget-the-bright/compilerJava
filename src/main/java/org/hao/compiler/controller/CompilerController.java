@@ -2,6 +2,9 @@ package org.hao.compiler.controller;
 
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.github.xiaoymin.knife4j.annotations.ApiSupport;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.hao.compiler.util.SseEmitterWriter;
 import org.hao.compiler.util.SseUtil;
 import org.hao.core.compiler.CompilerUtil;
@@ -14,8 +17,10 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 
+@Tag(name = "在线 Java 编译器")
 @Controller
 public class CompilerController {
+    @Operation(summary = "首页")
     @GetMapping("/")
     public ModelAndView editor() {
         ModelAndView modelAndView = new ModelAndView("editor");
@@ -24,7 +29,7 @@ public class CompilerController {
         return modelAndView;
     }
 
-
+    @Operation(summary = "编译代码SSE")
     @GetMapping("/compile/sse")
     @ResponseBody
     public SseEmitter compileSse(@RequestParam String code) {
