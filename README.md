@@ -136,7 +136,7 @@ http://localhost:8080/
 
 ## 🔧 核心模块介绍
 
-### 1. [CompilerController.java](./src/main/java/com/example/compiler/controller/CompilerController.java)
+### 1. [CompilerController.java](./src/main/java/org/hao/compiler/controller/CompilerController.java)
 
 负责接收用户的 Java 代码，编译并执行，然后通过 SSE 返回执行结果。
 
@@ -150,18 +150,18 @@ http://localhost:8080/
 
 - 支持多个客户端同时连接
 -
-使用 [ConsoleCapture](./src/main/java/com/example/compiler/config/ConsoleCapture.java#L10-L67)
-或 [SseLogbackAppender](./src/main/java/com/example/compiler/config/SseLogbackAppender.java#L13-L33)
+使用 [ConsoleCapture](./src/main/java/org/hao/compiler/config/ConsoleCapture.java#L10-L67)
+或 [SseLogbackAppender](./src/main/java/org/hao/compiler/config/SseLogbackAppender.java#L13-L33)
 拦截日志并广播给所有连接的客户端
 
-### 3. [ConsoleCapture.java](./src/main/java/com/example/compiler/config/ConsoleCapture.java)
+### 3. [ConsoleCapture.java](./src/main/java/org/hao/compiler/config/ConsoleCapture.java)
 
 重定向 `System.out` 和 `System.err`，将输出通过 SSE 推送给前端。
 
 - 支持多个客户端连接
 - 自动处理连接超时和关闭
 
-### 4. [SseLogbackAppender.java](./src/main/java/com/example/compiler/config/SseLogbackAppender.java)
+### 4. [SseLogbackAppender.java](./src/main/java/org/hao/compiler/config/SseLogbackAppender.java)
 
 自定义 Logback Appender，将日志信息通过 SSE 推送至前端。
 
