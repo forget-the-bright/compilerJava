@@ -2,7 +2,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.example</groupId>
+    <groupId>org.hao</groupId>
     <artifactId>compilerJava</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
@@ -16,7 +16,7 @@
     </parent>
     <properties>
         <java.version>1.8</java.version>
-        <HaoUtil.version>1.0.15.5</HaoUtil.version>
+        <HaoUtil.version>1.0.15.6</HaoUtil.version>
         <hutool.version>5.8.25</hutool.version>
         <fastjson.version>1.2.83</fastjson.version>
         <lombok.version>1.18.30</lombok.version>
@@ -52,12 +52,6 @@
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>${fastjson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.github.javaparser</groupId>
-            <artifactId>javaparser-core</artifactId>
-            <version>3.27.0</version>
         </dependency>
 
     </dependencies>

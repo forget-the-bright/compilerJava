@@ -1,7 +1,6 @@
-package com.example.compiler.controller;
+package org.hao.compiler.controller;
 
-import com.example.compiler.config.ConsoleCapture;
-import com.example.compiler.config.SseLogbackAppender;
+import org.hao.compiler.config.ConsoleCapture;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -12,7 +11,7 @@ public class LogStreamController {
     public SseEmitter streamLogs() {
         System.out.println();
         SseEmitter emitter = new SseEmitter(0L);
-        SseLogbackAppender.addEmitter(emitter);
+        //SseLogbackAppender.addEmitter(emitter);
         ConsoleCapture.addEmitter(emitter);
         return emitter;
     }

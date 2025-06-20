@@ -1,4 +1,4 @@
-package com.example.compiler.util;
+package org.hao.compiler.util;
 
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 

@@ -1,19 +1,13 @@
-package com.example.compiler.service;
+package org.hao.compiler.service;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
-import com.example.compiler.util.SseEmitterWriter;
-import com.github.javaparser.StaticJavaParser;
-import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.PackageDeclaration;
-import com.github.javaparser.ast.body.TypeDeclaration;
 import org.hao.core.compiler.CompilerUtil;
 import org.hao.core.compiler.InMemoryClassLoader;
 import org.hao.core.compiler.InMemoryJavaFileManager;
 import org.hao.core.compiler.JavaSourceFromString;
 import org.hao.core.exception.HaoException;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.tools.*;
 import java.io.*;
@@ -21,8 +15,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class JavaCompilerService {
-    public static Class<?> compile(String code, SseEmitter emitter) throws ClassNotFoundException {
-        String classNameByCode = getClassNameByCode(code);
+    public static Class<?> compile(String code, Writer writer) throws ClassNotFoundException {
+        String classNameByCode = CompilerUtil.getClassNameByCode(code);
         TreeSet<String> classpath = CompilerUtil.loadClassPath();
         JavaCompiler SYSTEM_COMPILER = CompilerUtil.SYSTEM_COMPILER;
         // 获取系统自带的 Java 编译器
@@ -52,14 +46,10 @@ public class JavaCompilerService {
                 options.add(StrUtil.join(File.pathSeparator, lombokJar));
             }
         }
-        SseEmitterWriter sseEmitterWriter = null;
-        if (emitter != null) {
-            sseEmitterWriter = new SseEmitterWriter(emitter);
-        }
         // 获取一个编译任务实例
         // 此处省略了SYSTEM_COMPILER和fileManager的初始化过程
         JavaCompiler.CompilationTask task = SYSTEM_COMPILER.getTask(
-                sseEmitterWriter, // 不使用Writer对象
+                writer, // 不使用Writer对象
                 fileManager, // 文件管理器，负责管理编译过程中的文件
                 diagnosticCollector, // 诊断收集器，收集编译信息
                 options, // 编译选项
@@ -98,17 +88,5 @@ public class JavaCompilerService {
         // 返回加载的类
         return aClass;
     }
-
-
-    public static String getClassNameByCode(String code) {
-        CompilationUnit parse = StaticJavaParser.parse(code);
-        String packageName = parse.getPackageDeclaration().orElse(new PackageDeclaration().setName("empty")).getName().toString();
-        String className = "";
-        TypeDeclaration<?> type = parse.getType(0);
-        className = type.getName().toString();
-
-        return packageName.equals("empty") ? className : packageName + "." + className;
-    }
-
 
 } 

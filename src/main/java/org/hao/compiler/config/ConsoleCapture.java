@@ -1,10 +1,9 @@
-package com.example.compiler.config;
+package org.hao.compiler.config;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import cn.hutool.core.codec.Base64;
+import org.hao.compiler.util.SseUtil;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 public class ConsoleCapture {
@@ -53,8 +52,7 @@ public class ConsoleCapture {
     private static void broadcastToEmitters(String message) {
         for (SseEmitter emitter : emitters) {
             try {
-                String encodeMsg = Base64.encode(message, Charset.forName("UTF-8"));
-                emitter.send(encodeMsg);
+                SseUtil.sendMegBase64(emitter, message);
             } catch (IOException e) {
                 emitters.remove(emitter);
             }

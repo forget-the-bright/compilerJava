@@ -2,7 +2,10 @@ server:
   port: 8080
   servlet:
     context-path: /complier
+
 spring:
+  application:
+    name: complier
   freemarker:
    template-loader-path: classpath:/templates/
    suffix: .ftl

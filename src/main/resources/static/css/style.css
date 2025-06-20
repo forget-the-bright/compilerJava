@@ -36,6 +36,13 @@ body {
     border-radius: 4px;
     cursor: pointer;
 }
+.toolbar button:disabled {
+    background: #cccccc;        /* 灰色背景 */
+    color: black;             /* 深灰色文字 */
+    cursor: not-allowed;        /* 禁止鼠标手势 */
+    opacity: 0.6;               /* 可选：降低透明度 */
+    border-color: #bbbbbb;      /* 可选：调整边框颜色 */
+}
 .toolbar button:hover {
     background: #0056b3;
 }
