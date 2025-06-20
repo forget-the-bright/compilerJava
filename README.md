@@ -145,7 +145,7 @@ http://localhost:8080/
 负责接收用户的 Java 代码，编译并执行，然后通过 SSE 返回执行结果。
 
 - URL: `/compile/sse?code=...`
-- 使用 [CompilerUtil.compileAndLoadClass()](./src/main/java//hao/core/compiler/CompilerUtil.java#L16-L16) 编译代码
+- 使用 [CompilerUtil.compileAndLoadClass()](https://github.com/forget-the-bright/HaoUtil/blob/main/src/main/java/org/hao/core/compiler/CompilerUtil.java#L16-L16) 编译代码
 - 使用反射调用主方法执行程序
 
 ### 2. [LogStreamController.java](./src/main/java/org/hao/compiler/controller/LogStreamController.java)
