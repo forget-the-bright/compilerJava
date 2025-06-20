@@ -104,7 +104,7 @@ src/
 ### 1. 启动项目
 
 - **注意事项**
-- **当前项目默认代码使用的注解生成器 `lombok`, 如果你也使用注解生成器相关需要开启以下配置。没用请忽略 ！！！**
+- **当前项目 在线编译默认示例代码 使用的注解生成器 `lombok`, 如果你也使用注解生成器相关需要开启以下配置。没用请忽略 ！！！**
 - 当前jdk版本如果大于8,jvm参数需要添加 --add-opens java.base/jdk.internal.loader=ALL-UNNAMED
 - 当前jdk版本如果等于8,classpath或者jre的lib 中请添加jdk库中的 tools.jar
 
