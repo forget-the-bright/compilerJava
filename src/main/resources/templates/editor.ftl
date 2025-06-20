@@ -79,8 +79,8 @@
             scrollback: scrollback,  // 可选：设置滚动历史缓冲区大小
             wrap: true,         // 关键：启用自动换行
             theme: {
-                background: '#222',
-                foreground: '#eee'
+                background: '#eee',
+                foreground: '#222'
             }
         });
         let fitAddon = new FitAddon();
