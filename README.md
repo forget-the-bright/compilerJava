@@ -19,6 +19,7 @@ Java 代码，并实时查看编译和运行结果，适用于教学、调试、
 
 ## 📷 截图预览
 ![在线 Java 编译器截图](https://github.com/user-attachments/assets/ba5cf90d-477c-401e-a649-1a8c9a3683c1)
+![编译](https://github.com/user-attachments/assets/f0eeb7bd-2d4f-4980-8757-f081512f1db5)
 
 ---
 ## 🧩 技术栈
