@@ -67,8 +67,9 @@
 <script type="module">
     // 初始化布局
     layout.init();
-    import {Terminal} from 'https://esm.sh/xterm@5.3.0'
-    import {FitAddon} from 'https://esm.sh/xterm-addon-fit@0.8.0';
+    import {Terminal} from 'https://esm.sh/xterm@latest'
+    import {FitAddon} from 'https://esm.sh/xterm-addon-fit@latest';
+    import {WebLinksAddon } from 'https://esm.sh/xterm-addon-web-links@latest';
 
     function getTermAndFitAddon(scrollback, document) {
         let term = new Terminal({
@@ -92,7 +93,8 @@
     const {term: logWindowTerm, fitAddon: logWindowFitAddon} = getTermAndFitAddon(10000, $('#logWindow')[0]);
     const {term: resultWindowTerm, fitAddon: resultWindowFitAddon} = getTermAndFitAddon(10000, $('#result')[0]);
 
-
+    // 加载并启用 WebLinksAddon，这允许识别和点击网页链接
+    logWindowTerm.loadAddon(new WebLinksAddon());
     let resizeTimeout;
     // 同时监听 Golden Layout 的更新事件
     layout.on('stateChanged', function () {
