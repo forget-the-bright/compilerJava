@@ -11,7 +11,7 @@
     <!-- xterm.js -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css">
     <!-- jstree -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css"/>
 
     <link rel="stylesheet" href="${domainUrl}/css/style.css">
 </head>
@@ -34,73 +34,12 @@
 <script>
     var editor;
     var layout;
-    // 配置布局
-    var config = layoutConfig;
     // 初始化布局
-    layout = new GoldenLayout(config, '#layout-container');
+    layout = new GoldenLayout(GoldenConfig, '#layout-container');
     // 注册组件
-    layout.registerComponent('editor', function (container, state) {
-        container.getElement().html('<div class="monaco-editor-container" id="editor"></div>');
-        require.config({paths: {'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs'}});
-        require(['vs/editor/editor.main'], function () {
-            editor = monaco.editor.create(container.getElement().find('.monaco-editor-container')[0], {
-                value: [getDemoCode()].join('\n'),
-                language: 'java',
-                theme: 'vs-light',
-                fontSize: 16,
-                automaticLayout: true
-            });
-        });
-    });
-
-    layout.registerComponent('output', function (container, state) {
-        container.getElement().html('<div id="result" style="width: 100%; height: 100%;"></div>');
-    });
-    layout.registerComponent('console', function (container, state) {
-        container.getElement().html('<div id="logWindow" style="width: 100%; height: 100%;"></div>');
-    });
-
-    layout.registerComponent('fileBrowser', function (container, state) {
-        container.getElement().html('<div id="fileBrowser" style="width: 100%; height: 100%;"></div>');
-
-        // 初始化 jsTree
-        var fileBrowser = container.getElement().find('#fileBrowser');
-        console.log( fileBrowser)
-        fileBrowser.jstree({
-            'core': {
-                'data': [
-                    {"text": "File1.js", "type": "file"},
-                    {"text": "File2.js", "type": "file"},
-                    {
-                        "text": "Directory", "type": "directory", "children": [
-                            {"text": "File3.js", "type": "file"}
-                        ]
-                    }
-                ]
-            },
-            'types': {
-                'default': {'icon': 'folder'},
-                'file': {'icon': 'file'}
-            },
-            'plugins': ['types']
-        });
-
-        // 监听点击事件
-        $('#fileBrowser').on('select_node.jstree', function (e, data) {
-            if (data.node.type === 'file') {
-                const fileName = data.node.text;
-                var url = encodeURIComponent(fileName);
-                fetch(`/files/` + url)
-                    .then(response => response.text())
-                    .then(content => {
-                        editor.getModel().setValue(content);
-                    })
-                    .catch(error => console.error('Error fetching file:', error));
-            }
-        });
-    });
-
-
+    for (let [key, value] of GoldenComponentMap) {
+        layout.registerComponent(key, value);
+    }
     // 监听窗口大小变化，自动调整终端尺寸
     $(window).resize(function () {
         try {
