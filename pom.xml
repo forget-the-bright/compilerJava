@@ -20,6 +20,7 @@
         <hutool.version>5.8.25</hutool.version>
         <fastjson.version>1.2.83</fastjson.version>
         <lombok.version>1.18.30</lombok.version>
+        <lsp4j.version>0.24.0</lsp4j.version>
     </properties>
     <dependencies>
         <dependency>
@@ -59,7 +60,27 @@
             <artifactId>knife4j-openapi3-spring-boot-starter</artifactId>
             <version>4.4.0</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+        <!--java JDT LS-->
+        <dependency>
+            <groupId>org.eclipse.jdt</groupId>
+            <artifactId>org.eclipse.jdt.core</artifactId>
+            <version>3.42.0</version>
+        </dependency>
+        <!-- LSP4J -->
+        <dependency>
+            <groupId>org.eclipse.lsp4j</groupId>
+            <artifactId>org.eclipse.lsp4j</artifactId>
+            <version>${lsp4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.lsp4j</groupId>
+            <artifactId>org.eclipse.lsp4j.jsonrpc</artifactId>
+            <version>${lsp4j.version}</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
