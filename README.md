@@ -273,3 +273,14 @@ MIT License
 `compilerJava` 是一个完整的在线 Java 编译器项目，适合用于教学演示、代码调试、面试题测试等场景。它结合了现代前后端技术，具备良好的扩展性和维护性，是一个理想的教育类或工具类开源项目。
 
 --- 
+
+## 感谢
+- [HaoUtil](https://github.com/forget-the-bright/HaoUtil)
+- [xterm.js](https://xterm.js.org/)
+- [Monaco Editor](https://microsoft.github.io/monaco-editor/)
+- [Spring Boot](https://spring.io/projects/spring-boot)
+- [Freemarker](https://freemarker.apache.org/)
+- [Logback](https://logback.qos.ch/)
+- [GoldenLayout](https://golden-layout.com/)
+- [Java](https://www.oracle.com/java/)
+- [spring-boot-websocket-lsp4j](https://github.com/lisirrx/spring-boot-websocket-lsp4j)

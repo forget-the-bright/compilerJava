@@ -8,14 +8,12 @@
     <link type="text/css" rel="stylesheet" href="https://golden-layout.com/files/latest/css/goldenlayout-base.css"/>
     <link type="text/css" rel="stylesheet"
           href="https://golden-layout.com/files/latest/css/goldenlayout-light-theme.css"/>
-
     <!-- xterm.js -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css">
-    <#--    <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.min.js"></script>-->
-    <link rel="stylesheet" href="${domainUrl}/css/style.css">
-    <!-- CSS -->
+    <!-- jstree -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
-<#--    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orangehill/jstree-bootstrap-theme/dist/themes/proton/style.min.css" />-->
+
+    <link rel="stylesheet" href="${domainUrl}/css/style.css">
 </head>
 <body>
 <div class="toolbar">
@@ -28,7 +26,7 @@
 <!-- jsTree 脚本 -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
-<script type="text/javascript" src="https://golden-layout.com/files/latest/js/goldenlayout.min.js"></script>
+<script src="https://golden-layout.com/files/latest/js/goldenlayout.min.js"></script>
 <!-- Monaco Editor loader -->
 <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
 <script src="${domainUrl}/js/demo_code.js"></script>
@@ -127,8 +125,8 @@
             scrollback: scrollback,  // 可选：设置滚动历史缓冲区大小
             wrap: true,         // 关键：启用自动换行
             theme: {
-                background: '#eee',
-                foreground: '#222'
+                background: '#ffffff',
+                foreground: '#000000'
             }
         });
         let fitAddon = new FitAddon();
@@ -150,8 +148,6 @@
         resizeTimeout = setTimeout(() => {
             logWindowFitAddon.fit();
             resultWindowFitAddon.fit();
-            // console.log(term.cols, term.rows);
-            // console.log($('#logWindow')[0].offsetWidth,$('#logWindow')[0].offsetHeight);
         }, 200); // 延迟确保 DOM 已更新 // 只有最后一次会执行
     });
 

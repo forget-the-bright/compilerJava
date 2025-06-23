@@ -20,7 +20,10 @@
         <hutool.version>5.8.25</hutool.version>
         <fastjson.version>1.2.83</fastjson.version>
         <lombok.version>1.18.30</lombok.version>
-        <lsp4j.version>0.24.0</lsp4j.version>
+        <!--lsp4j 最后支持java8[0.17.0],大于java8[0.18.0] 之后的所有版本,250623最新[0.24.0]-->
+        <lsp4j.version>0.17.0</lsp4j.version>
+        <!--lsp4j 最后支持java8[3.21.0],大于java8[3.22.0] 之后的所有版本,250623最新[3.42.0]-->
+        <jdt.version>3.10.0</jdt.version>
     </properties>
     <dependencies>
         <dependency>
@@ -68,8 +71,9 @@
         <dependency>
             <groupId>org.eclipse.jdt</groupId>
             <artifactId>org.eclipse.jdt.core</artifactId>
-            <version>3.42.0</version>
+            <version>${jdt.version}</version>
         </dependency>
+
         <!-- LSP4J -->
         <dependency>
             <groupId>org.eclipse.lsp4j</groupId>
@@ -79,6 +83,11 @@
         <dependency>
             <groupId>org.eclipse.lsp4j</groupId>
             <artifactId>org.eclipse.lsp4j.jsonrpc</artifactId>
+            <version>${lsp4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.lsp4j</groupId>
+            <artifactId>org.eclipse.lsp4j.websocket</artifactId>
             <version>${lsp4j.version}</version>
         </dependency>
     </dependencies>

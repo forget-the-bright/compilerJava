@@ -7,6 +7,7 @@ import org.eclipse.jdt.core.dom.*;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
+import org.hao.compiler.util.JdkVersionUtils;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -167,7 +168,7 @@ public class JavaTextDocumentService implements TextDocumentService {
     }
 
     private void parseJavaCode(String uri, String code) {
-        ASTParser parser = ASTParser.newParser(AST.JLS17);
+        ASTParser parser = ASTParser.newParser(JdkVersionUtils.getMajorJavaVersion());
         parser.setSource(code.toCharArray());
         parser.setKind(ASTParser.K_COMPILATION_UNIT);
 
