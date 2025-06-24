@@ -100,6 +100,21 @@ public class ProjectService {
         return resourceRepo.save(projectResource);
     }
 
+    public ProjectResource removeProjectSourceById(Long projectResourceId) {
+        return resourceRepo.findById(projectResourceId).map(resource -> {
+            resourceRepo.delete(resource);
+            return resource;
+        }).orElse(null);
+    }
+
+    public ProjectResource reFileName(Long projectResourceId, String name) {
+        return resourceRepo.findById(projectResourceId).map(resource -> {
+            resource.setName(name);
+            resourceRepo.save(resource);
+            return resource;
+        }).orElse(null);
+    }
+
     // 树节点 VO
     @Data
     public static class TreeVO {

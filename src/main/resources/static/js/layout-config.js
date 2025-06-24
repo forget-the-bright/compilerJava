@@ -40,7 +40,7 @@ var GoldenConfig = {
             content: [
                 {
                     type: 'column',
-                    width: 10,
+                    width: 20,
                     content: [
                         {
                             type: 'component',
@@ -54,7 +54,7 @@ var GoldenConfig = {
                 },
                 {
                     type: 'column',
-                    width: 90,
+                    width: 80,
                     content: [
                         // 第一行：Java编辑器 + 编译输出
                         {
@@ -120,18 +120,20 @@ GoldenComponentMap.set('editor', function (container, state) {
             fontSize: 16,
             automaticLayout: true
         });
+
+        fetch(`${window.baseUrl}/projects/5/file`)
+            .then(response => response.text())
+            .then(content => {
+                let data = JSON.parse(content);
+                console.log(data)
+                editor.getModel().config = data;
+                console.log(editor.getModel())
+                editor.getModel().setValue(data.content);
+            })
+            .catch(error => console.error('Error fetching file:', error));
     });
 
-    fetch(`${window.baseUrl}/projects/5/file`)
-        .then(response => response.text())
-        .then(content => {
-            let data = JSON.parse(content);
-            console.log(data)
-            editor.getModel().config = data;
-            console.log(editor.getModel())
-            editor.getModel().setValue(data.content);
-        })
-        .catch(error => console.error('Error fetching file:', error));
+
 });
 GoldenComponentMap.set('output', function (container, state) {
     container.getElement().html('<div id="result" style="width: 100%; height: 100%;"></div>');
@@ -151,17 +153,112 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
         }).catch(error => console.error('Error fetching file:', error));
 
     function initJStree(jstreeData, fileBrowser) {
-        var jstree = fileBrowser.jstree({
-            'core': jstreeData,
-            'types': {
-                'default': {'icon': 'folder'},
-                'file': {'icon': 'file'}
+        console.log(jstreeData);
+        var jstree;
+        jstree = fileBrowser.jstree({
+            'core': {
+                'data': jstreeData.data,
+                "check_callback": true // 允许创建、删除、重命名等操作
             },
-            'plugins': ['types']
+            'types': {
+                'directory': {
+                    'icon': 'fas fa-folder' //folder
+                },
+                'file': {
+                    'icon': 'fas fa-code' //file
+                }
+            },
+            'plugins': ['types', 'contextmenu'],
+            "contextmenu": {
+
+                // 自定义菜单项
+                items: function (node) {
+                    console.log(' node', node);
+                    let inst = $('#fileBrowser').jstree(true);
+                    let items = {};
+                    if (node.type === 'directory') {
+                        items['新建文件夹'] = {
+                            "label": "新建文件夹",
+                            'icon': 'fas fa-folder',
+                            "action": async function (data) {
+                                // let inst = $.jstree.reference(data.reference)
+                                let rdata = await fetch(`${window.baseUrl}/projects/1/dirs?name=${encodeURIComponent("temp")}&parentId=${node.id}`, {
+                                    method: 'POST'
+                                });
+                                rdata = await rdata.json();
+                                let childNode = {type: "directory", id: rdata.id}
+                                inst.create_node(node, childNode, "last", function (new_node) {
+                                    new_node.text = "temp";
+                                    inst.edit(new_node);
+                                });
+                            }
+                        }
+                        items['新建文件'] = {
+                            "label": "新建文件",
+                            'icon': 'fas fa-code',
+                            "action": async function (data) {
+                                let rdata = await fetch(`${window.baseUrl}/projects/1/files?name=${encodeURIComponent("temp.java")}&parentId=${node.id}&content=''`, {
+                                    method: 'POST'
+                                });
+                                rdata = await rdata.json();
+                                console.log('childNode', rdata)
+                                //let currentNode = inst.get_node(data.reference);
+                                let childNode = {type: "file", id: rdata.id}
+                                console.log('childNode', childNode)
+                                inst.create_node(node, childNode, "last", function (new_node) {
+                                    new_node.text = "temp.java";
+                                    inst.edit(new_node);
+                                });
+                            }
+                        }
+                    }
+                    if (!(node.children && node.children.length > 0)) {
+                        items['删除节点'] = {
+                            "label": "删除",
+                            'icon': 'fas fa-del',
+                            "action": async function (data) {
+                                let parentNode = inst.get_node(data.reference);
+                                //  console.log('parentNode', parentNode)
+                                //自定义属性通过original 获取
+                                //  console.log('parentNode.original.system', parentNode.original.system)
+                                if (parentNode.original.system) {
+                                    //alert("当前是系统文件不能删除！！！");
+                                    // return;
+                                }
+                                if (!confirm('确定要删除吗？')) {
+                                    return;
+                                }
+                                inst.delete_node(parentNode);
+                                let rdata = await fetch(`${window.baseUrl}/projects/${node.id}/removeById`, {
+                                    method: 'DELETE'
+                                });
+
+                            }
+                        }
+                    }
+
+                    items['重命名'] = {
+                        "label": "重命名",
+                        'icon': 'fas fa-code',
+                        "action": async function (data) {
+                            inst.edit(node);
+                        }
+                    }
+                    return items;
+                }
+            }
         });
         jstree.on('activate_node.jstree', function (e, data) {
             console.log('节点被激活:', data.node);
             // 在这里执行你想要的操作，比如打开一个新的页面、展示详细信息等
+        });
+        jstree.on('rename_node.jstree', function (e, data) {
+            console.log('节点被激活:', data.node);
+            // 在这里执行你想要的操作，比如打开一个新的页面、展示详细信息等
+
+            fetch(`${window.baseUrl}/projects/${data.node.id}/reFileName?name=${data.node.text}`, {
+                method: 'GET' // 指定请求方法为 POST
+            })
         });
         // 监听点击事件
         jstree.on('select_node.jstree', function (e, data) {
@@ -190,6 +287,7 @@ function transformNode(node) {
     const transformed = {
         text: node.name,
         type: node.type.toLowerCase(),
+        system: true,
         id: node.id,
     };
 
@@ -201,12 +299,10 @@ function transformNode(node) {
         .map(child => transformNode(child))
         .filter(Boolean); // 过滤掉无效节点
 
-    if (children.length > 0) {
-        return {
-            ...transformed,
-            children
-        };
-    }
+    return {
+        ...transformed,
+        children
+    };
 
     return null; // 没有子文件的目录也忽略
 }
@@ -220,3 +316,4 @@ function convertData(input) {
 
     return {data: result};
 }
+

@@ -12,8 +12,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css">
     <!-- jstree -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css"/>
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <link rel="stylesheet" href="${domainUrl}/css/style.css">
+
     <script>
         window.baseUrl = "${domainUrl}";
     </script>
@@ -29,7 +30,7 @@
 
 <!-- jsTree 脚本 -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/jstree.min.js"></script>
 <script src="https://golden-layout.com/files/latest/js/goldenlayout.min.js"></script>
 <!-- Monaco Editor loader -->
 <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>

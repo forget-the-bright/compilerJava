@@ -52,18 +52,35 @@ public class ProjectController {
             @RequestParam(required = false) Long parentId) {
         return projectService.addFile(projectId, name, content, parentId);
     }
+
     @Operation(summary = "更新文件")
     @PostMapping("/updateFile")
     public ProjectResource updateFile(
-             @RequestBody ProjectResource projectResource) {
+            @RequestBody ProjectResource projectResource) {
         return projectService.updateFile(projectResource);
     }
+
     @Operation(summary = "获取文件内容")
     @GetMapping("/{ProjectResourceId}/file")
     public ProjectResource getFile(
             @PathVariable Long ProjectResourceId) {
         return projectService.getProjectSourceById(ProjectResourceId);
     }
+
+    @Operation(summary = "重命名")
+    @GetMapping("/{ProjectResourceId}/reFileName")
+    public ProjectResource reFileName(
+            @PathVariable Long ProjectResourceId,
+            @RequestParam String name) {
+        return projectService.reFileName(ProjectResourceId,name);
+    }
+
+    @Operation(summary = "删除文件")
+    @DeleteMapping("/{ProjectResourceId}/removeById")
+    public ProjectResource removeFileById(@PathVariable Long ProjectResourceId) {
+        return projectService.removeProjectSourceById(ProjectResourceId);
+    }
+
     // 获取项目树
     @Operation(summary = "获取项目树")
     @GetMapping("/{projectId}/tree")
