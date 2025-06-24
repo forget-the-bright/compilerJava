@@ -14,11 +14,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css"/>
 
     <link rel="stylesheet" href="${domainUrl}/css/style.css">
+    <script>
+        window.baseUrl = "${domainUrl}";
+    </script>
 </head>
 <body>
 <div class="toolbar">
     <button id="compileSseBtn">编译运行</button>
     <button id="clearLogsBtn">清除日志</button>
+    <button id="saveFile">保存文件</button>
 </div>
 <div id="layout-container"></div>
 
@@ -97,9 +101,33 @@
         message = base64ToUtf8(message);
         logWindowTerm.write(message);
     };
-
+    $('#saveFile').click(function () {
+        let config = editor.getModel().config;
+        if (!config){
+            alert('请选择文件');
+            return;
+        }
+        config.content = getCode();
+        // 使用 fetch 发送 POST 请求
+        fetch(`${domainUrl}/projects/updateFile`, {
+            method: 'POST', // 指定请求方法为 POST
+            headers: {
+                'Content-Type': 'application/json', // 设置请求头，表明请求体是 JSON 格式
+                // 如果需要身份验证或其他类型的头信息，可以在这里添加
+                // 'Authorization': 'Bearer your-token'
+            },
+            body: JSON.stringify(config), // 将 JavaScript 对象转换为 JSON 字符串
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok ' + response.statusText);
+            }
+            return response.json(); // 解析 JSON 格式的响应
+        }).then(data => console.log(data)) // 成功处理响应数据
+            .catch(error => console.error('There was a problem with the fetch operation:', error));
+    });
     // 编译按钮事件
     $('#compileSseBtn').click(function () {
+
 
         var eventSource = new EventSource('${domainUrl}/compile/sse?code=' + encodeURIComponent(getCode()), {
             headers: {'Content-Type': 'application/x-www-form-urlencoded'}

@@ -284,3 +284,11 @@ MIT License
 - [GoldenLayout](https://golden-layout.com/)
 - [Java](https://www.oracle.com/java/)
 - [spring-boot-websocket-lsp4j](https://github.com/lisirrx/spring-boot-websocket-lsp4j)
+
+## 备忘导出sql 
+```h2
+-- 导出全部信息
+SCRIPT TO 'data.sql';
+-- 导出指定表信息
+SCRIPT TO 'data.sql' TABLE PROJECT_RESOURCE ;
+```

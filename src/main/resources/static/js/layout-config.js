@@ -49,8 +49,6 @@ var GoldenConfig = {
                             componentState: {},
                             // 👇 关键配置
                             isClosable: false,
-                            collapsible: true, // 启用折叠功能
-                            collapsed: false   // 初始是否折叠
                         }
                     ]
                 },
@@ -123,6 +121,17 @@ GoldenComponentMap.set('editor', function (container, state) {
             automaticLayout: true
         });
     });
+
+    fetch(`${window.baseUrl}/projects/5/file`)
+        .then(response => response.text())
+        .then(content => {
+            let data = JSON.parse(content);
+            console.log(data)
+            editor.getModel().config = data;
+            console.log(editor.getModel())
+            editor.getModel().setValue(data.content);
+        })
+        .catch(error => console.error('Error fetching file:', error));
 });
 GoldenComponentMap.set('output', function (container, state) {
     container.getElement().html('<div id="result" style="width: 100%; height: 100%;"></div>');
@@ -134,40 +143,80 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
     container.getElement().html('<div id="fileBrowser" style="width: 100%; height: 100%;"></div>');
     // 初始化 jsTree
     var fileBrowser = container.getElement().find('#fileBrowser');
-    //console.log(fileBrowser)
-    var jstree = fileBrowser.jstree({
-        'core': {
-            'data': [
-                {"text": "demo.java", "type": "file"},
-                {
-                    "text": "Directory", "type": "directory", "children": [
-                        {"text": "demo2.java", "type": "file"}
-                    ]
-                }
-            ]
-        },
-        'types': {
-            'default': {'icon': 'folder'},
-            'file': {'icon': 'file'}
-        },
-        'plugins': ['types']
-    });
-    jstree.on('activate_node.jstree', function (e, data) {
-        console.log('节点被激活:', data.node);
-        // 在这里执行你想要的操作，比如打开一个新的页面、展示详细信息等
-    });
-    // 监听点击事件
-    jstree.on('select_node.jstree', function (e, data) {
-        if (data.node.type === 'file') {
-            const fileName = data.node.text;
-            var url = encodeURIComponent(fileName);
-            console.log(fileName)
-           /* fetch(`/files/` + url)
-                .then(response => response.text())
-                .then(content => {
-                    editor.getModel().setValue(content);
-                })
-                .catch(error => console.error('Error fetching file:', error));*/
-        }
-    });
+    let projectId = 1;
+    fetch(`${window.baseUrl}/projects/${projectId}/tree`).then(response => response.text())
+        .then(content => {
+            let jstreeData = convertData(JSON.parse(content));
+            initJStree(jstreeData, fileBrowser);
+        }).catch(error => console.error('Error fetching file:', error));
+
+    function initJStree(jstreeData, fileBrowser) {
+        var jstree = fileBrowser.jstree({
+            'core': jstreeData,
+            'types': {
+                'default': {'icon': 'folder'},
+                'file': {'icon': 'file'}
+            },
+            'plugins': ['types']
+        });
+        jstree.on('activate_node.jstree', function (e, data) {
+            console.log('节点被激活:', data.node);
+            // 在这里执行你想要的操作，比如打开一个新的页面、展示详细信息等
+        });
+        // 监听点击事件
+        jstree.on('select_node.jstree', function (e, data) {
+            if (data.node.type === 'file') {
+                const fileNode = data.node;
+                const ProjectResourceId = data.node.id;
+                console.log(fileNode)
+                fetch(`${window.baseUrl}/projects/${ProjectResourceId}/file`)
+                    .then(response => response.text())
+                    .then(content => {
+                        let data = JSON.parse(content);
+                        console.log(data)
+                        editor.getModel().config = data;
+                        console.log(editor.getModel())
+                        editor.getModel().setValue(data.content);
+                    })
+                    .catch(error => console.error('Error fetching file:', error));
+            }
+        });
+    }
+
 });
+
+function transformNode(node) {
+    const isFile = node.type === 'FILE';
+    const transformed = {
+        text: node.name,
+        type: node.type.toLowerCase(),
+        id: node.id,
+    };
+
+    if (isFile) {
+        return transformed;
+    }
+
+    const children = (node.children || [])
+        .map(child => transformNode(child))
+        .filter(Boolean); // 过滤掉无效节点
+
+    if (children.length > 0) {
+        return {
+            ...transformed,
+            children
+        };
+    }
+
+    return null; // 没有子文件的目录也忽略
+}
+
+function convertData(input) {
+    const result = input.reduce((acc, node) => {
+        const transformed = transformNode(node);
+        if (transformed) acc.push(transformed);
+        return acc;
+    }, []);
+
+    return {data: result};
+}
