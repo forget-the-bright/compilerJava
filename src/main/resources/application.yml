@@ -4,6 +4,9 @@ server:
     context-path: /complier
 
 spring:
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
   application:
     name: complier
   freemarker:

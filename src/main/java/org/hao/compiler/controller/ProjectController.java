@@ -31,9 +31,19 @@ public class ProjectController {
     @Operation(summary = "创建项目")
     @PostMapping
     public Project createProject(@RequestBody CreateProjectDTO dto) {
-        return projectService.createProject(dto.getName(), dto.getCreator());
+        return projectService.createProject(dto.getName(), dto.getMainClass(), dto.getCreator());
     }
 
+    @Operation(summary = "更新项目")
+    @PostMapping("{projectId}/updateProject")
+    public Project updateProject(@PathVariable Long projectId, @RequestBody CreateProjectDTO dto) {
+        return projectService.updateProject(projectId,dto);
+    }
+    @Operation(summary = "项目列表")
+    @PostMapping("listProject")
+    public List<Project> listProject() {
+        return projectService.getProjects();
+    }
     // 添加目录
     @Operation(summary = "添加目录")
     @PostMapping("/{projectId}/dirs")
@@ -74,7 +84,7 @@ public class ProjectController {
     public ProjectResource reFileName(
             @PathVariable Long ProjectResourceId,
             @RequestParam String name) {
-        return projectService.reFileName(ProjectResourceId,name);
+        return projectService.reFileName(ProjectResourceId, name);
     }
 
     @Operation(summary = "删除文件")

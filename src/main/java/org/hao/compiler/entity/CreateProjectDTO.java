@@ -11,5 +11,6 @@ import lombok.Data;
 @Data
 public class CreateProjectDTO {
     private String name;
+    private String mainClass;
     private String creator;
 }

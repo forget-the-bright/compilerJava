@@ -31,5 +31,7 @@ public class Project {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
 
+    private String mainClass;
+
     private String creator;
 }

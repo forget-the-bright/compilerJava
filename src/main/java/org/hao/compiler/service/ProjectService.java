@@ -7,11 +7,14 @@ import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.hao.compiler.entity.CreateProjectDTO;
 import org.hao.compiler.entity.Project;
 import org.hao.compiler.entity.ProjectResource;
 import org.hao.compiler.entity.ResourceType;
 import org.hao.compiler.repository.ProjectRepository;
 import org.hao.compiler.repository.ProjectResourceRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.stereotype.Service;
 import org.springframework.ui.freemarker.FreeMarkerConfigurationFactoryBean;
 
@@ -37,16 +40,33 @@ public class ProjectService {
     private final ProjectRepository projectRepo;
     private final ProjectResourceRepository resourceRepo;
     private final Configuration freeMarkerConfig;
+    private final JdbcTemplate jdbcTemplate;
 
     // 创建项目
-    public Project createProject(String name, String creator) {
+    public Project createProject(String name, String mainClass, String creator) {
         Project project = new Project();
         project.setName(name);
+        project.setMainClass(mainClass);
         project.setCreateTime(new Date());
         project.setCreator(creator);
         return projectRepo.save(project);
     }
 
+    public Project updateProject(Long projectId, CreateProjectDTO dto) {
+        return projectRepo.findById(projectId).map(project -> {
+            project.setName(dto.getName());
+            project.setMainClass(dto.getMainClass());
+            project.setCreator(dto.getCreator());
+            return projectRepo.save(project);
+        }).orElse(null);
+    }
+
+    public Project getProjectById(long projectId) {
+        return projectRepo.findById(projectId).orElse( null);
+    }
+    public List<Project> getProjects() {
+        return projectRepo.findAll();
+    }
     // 添加目录
     public ProjectResource addDirectory(Long projectId, String dirName, Long parentId) {
         return resourceRepo.save(ProjectResource.ofDir(dirName, projectId, parentId));
@@ -71,7 +91,7 @@ public class ProjectService {
                 projectResource = collect.get(projectResource.getParentId());
             }
         }
-        String  className = StrUtil.subBefore(fileName, ".", true);
+        String className = StrUtil.subBefore(fileName, ".", true);
         // 加载模板文件（位于 src/main/resources/templates）
         Template template = freeMarkerConfig.getTemplate("java_template.ftl");
 
@@ -156,6 +176,14 @@ public class ProjectService {
             return resource;
         }).orElse(null);
     }
+
+    public List<String> getProjectSourceContentsByProjectId(long projectId) {
+        List<String> contents = jdbcTemplate.queryForList(StrUtil.format("SELECT content FROM project_resource WHERE project_id ={}", projectId), String.class);
+        return contents;
+    }
+
+
+
 
     // 树节点 VO
     @Data

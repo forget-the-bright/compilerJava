@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css">
     <!-- jstree -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
     <link rel="stylesheet" href="${domainUrl}/css/style.css">
 
     <script>
@@ -21,7 +21,8 @@
 </head>
 <body>
 <div class="toolbar">
-    <button id="compileSseBtn">编译运行</button>
+    <button id="compileSseBtn">编译当前文件运行</button>
+    <button id="compileProjectSseBtn">编译项目运行</button>
     <button id="clearLogsBtn">清除日志</button>
     <button id="saveFile">保存文件</button>
 </div>
@@ -104,7 +105,7 @@
     };
     $('#saveFile').click(function () {
         let config = editor.getModel().config;
-        if (!config){
+        if (!config) {
             alert('请选择文件');
             return;
         }
@@ -142,6 +143,22 @@
         eventSource.onerror = function () {
             eventSource.close();
             $('#compileSseBtn').prop("disabled", false);
+        };
+    });
+    $('#compileProjectSseBtn').click(function () {
+        var eventSource = new EventSource('${domainUrl}/compileProject/sse?projectId=1', {
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+        });
+        $('#compileProjectSseBtn').prop("disabled", true);
+        eventSource.onmessage = function (e) {
+            let message = e.data;
+            message = base64ToUtf8(message);
+            resultWindowTerm.write(message);
+        };
+        eventSource.onerror = function () {
+            eventSource.close();
+            console.log('compileProject eventSource is error close ');
+            $('#compileProjectSseBtn').prop("disabled", false);
         };
     });
 
