@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import java.util.Date;
+import java.util.List;
 
 /**
  * TODO
@@ -40,13 +41,16 @@ public class ProjectResource {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
 
+    @Transient
+    private List<ProjectResource> children;
+
     // 构造方法辅助创建目录或文件
     public static ProjectResource ofDir(String name, Long projectId, Long parentId) {
-        return new ProjectResource(null, projectId, parentId, name, ResourceType.DIRECTORY, null, new Date());
+        return new ProjectResource(null, projectId, parentId, name, ResourceType.DIRECTORY, null, new Date(), null);
     }
 
     public static ProjectResource ofFile(String name, String content, Long projectId, Long parentId) {
-        return new ProjectResource(null, projectId, parentId, name, ResourceType.FILE, content, new Date());
+        return new ProjectResource(null, projectId, parentId, name, ResourceType.FILE, content, new Date(), null);
     }
 }
 

@@ -1,5 +1,10 @@
 package org.hao.compiler.service;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.hao.compiler.entity.Project;
@@ -8,11 +13,16 @@ import org.hao.compiler.entity.ResourceType;
 import org.hao.compiler.repository.ProjectRepository;
 import org.hao.compiler.repository.ProjectResourceRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.ui.freemarker.FreeMarkerConfigurationFactoryBean;
 
 import javax.persistence.EntityGraph;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * TODO
@@ -26,6 +36,7 @@ public class ProjectService {
 
     private final ProjectRepository projectRepo;
     private final ProjectResourceRepository resourceRepo;
+    private final Configuration freeMarkerConfig;
 
     // 创建项目
     public Project createProject(String name, String creator) {
@@ -42,8 +53,37 @@ public class ProjectService {
     }
 
     // 添加文件
-    public ProjectResource addFile(Long projectId, String fileName, String content, Long parentId) {
-        return resourceRepo.save(ProjectResource.ofFile(fileName, content, projectId, parentId));
+    public ProjectResource addFile(Long projectId, String fileName, String content, Long parentId) throws IOException, TemplateException {
+
+        List<ProjectResource> resources = resourceRepo.findByProjectIdWithoutContent(projectId);
+        Map<Long, ProjectResource> collect = resources.stream().collect(Collectors.toMap(ProjectResource::getId, Function.identity()));
+        // Map<Long, List<ProjectResource>> collect = resources.stream().collect(Collectors.groupingBy(ProjectResource::getParentId));
+
+        ProjectResource parentPath = resources.stream().filter(r -> r.getId() == parentId).findFirst().orElse(null);
+
+        String packageName = "";
+        if (null != parentPath) {
+            packageName = parentPath.getName();
+            ProjectResource projectResource = collect.get(parentPath.getParentId());
+            while (true) {
+                if (null == projectResource) break;
+                packageName = projectResource.getName() + "." + packageName;
+                projectResource = collect.get(projectResource.getParentId());
+            }
+        }
+        String  className = StrUtil.subBefore(fileName, ".", true);
+        // 加载模板文件（位于 src/main/resources/templates）
+        Template template = freeMarkerConfig.getTemplate("java_template.ftl");
+
+        // 使用 StringWriter 接收渲染后的结果
+        StringWriter stringWriter = new StringWriter();
+        Map<String, Object> data = new HashMap<>();
+        data.put("packageName", packageName);
+        data.put("className", className);
+        template.process(data, stringWriter);
+        content = stringWriter.toString();
+        ProjectResource projectResource = ProjectResource.ofFile(fileName, content, projectId, parentId);
+        return resourceRepo.save(projectResource);
     }
 
     // 获取某个项目的目录树（递归构建）
@@ -97,6 +137,8 @@ public class ProjectService {
     }
 
     public ProjectResource updateFile(ProjectResource projectResource) {
+        ProjectResource byId = resourceRepo.getById(projectResource.getId());
+        if (byId == null) return byId;
         return resourceRepo.save(projectResource);
     }
 

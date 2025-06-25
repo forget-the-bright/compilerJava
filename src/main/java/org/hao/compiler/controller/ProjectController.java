@@ -1,5 +1,6 @@
 package org.hao.compiler.controller;
 
+import freemarker.template.TemplateException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.hao.compiler.entity.ProjectResource;
 import org.hao.compiler.service.ProjectService;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -49,7 +51,7 @@ public class ProjectController {
             @PathVariable Long projectId,
             @RequestParam String name,
             @RequestParam String content,
-            @RequestParam(required = false) Long parentId) {
+            @RequestParam(required = false) Long parentId) throws TemplateException, IOException {
         return projectService.addFile(projectId, name, content, parentId);
     }
 
