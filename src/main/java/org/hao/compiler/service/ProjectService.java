@@ -1,22 +1,26 @@
 package org.hao.compiler.service;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.TypeDeclaration;
+import com.google.googlejavaformat.java.JavaFormatterOptions;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.hao.Main;
 import org.hao.compiler.entity.CreateProjectDTO;
 import org.hao.compiler.entity.Project;
 import org.hao.compiler.entity.ProjectResource;
 import org.hao.compiler.entity.ResourceType;
 import org.hao.compiler.repository.ProjectRepository;
 import org.hao.compiler.repository.ProjectResourceRepository;
+import org.hao.core.compiler.CompilerUtil;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.stereotype.Service;
-import org.springframework.ui.freemarker.FreeMarkerConfigurationFactoryBean;
 
 import javax.persistence.EntityGraph;
 import javax.persistence.EntityManager;
@@ -25,7 +29,11 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.*;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import com.google.googlejavaformat.java.Formatter;
 
 /**
  * TODO
@@ -62,11 +70,17 @@ public class ProjectService {
     }
 
     public Project getProjectById(long projectId) {
-        return projectRepo.findById(projectId).orElse( null);
+        return projectRepo.findById(projectId).orElse(null);
     }
+
     public List<Project> getProjects() {
         return projectRepo.findAll();
     }
+
+    public List<ProjectResource> listProjectSource(Long projectId) {
+        return resourceRepo.findByProjectId(projectId);
+    }
+
     // 添加目录
     public ProjectResource addDirectory(Long projectId, String dirName, Long parentId) {
         return resourceRepo.save(ProjectResource.ofDir(dirName, projectId, parentId));
@@ -80,7 +94,6 @@ public class ProjectService {
         // Map<Long, List<ProjectResource>> collect = resources.stream().collect(Collectors.groupingBy(ProjectResource::getParentId));
 
         ProjectResource parentPath = resources.stream().filter(r -> r.getId() == parentId).findFirst().orElse(null);
-
         String packageName = "";
         if (null != parentPath) {
             packageName = parentPath.getName();
@@ -103,6 +116,39 @@ public class ProjectService {
         template.process(data, stringWriter);
         content = stringWriter.toString();
         ProjectResource projectResource = ProjectResource.ofFile(fileName, content, projectId, parentId);
+        return resourceRepo.save(projectResource);
+    }
+
+    private String getPackageName(Long projectId, Long parentId) {
+        List<ProjectResource> resources = resourceRepo.findByProjectIdWithoutContent(projectId);
+        Map<Long, ProjectResource> collect = resources.stream().collect(Collectors.toMap(ProjectResource::getId, Function.identity()));
+        ProjectResource parentPath = resources.stream().filter(r -> r.getId() == parentId).findFirst().orElse(null);
+        String packageName = "";
+        if (null != parentPath) {
+            packageName = parentPath.getName();
+            ProjectResource projectResource = collect.get(parentPath.getParentId());
+            while (true) {
+                if (null == projectResource) break;
+                packageName = projectResource.getName() + "." + packageName;
+                projectResource = collect.get(projectResource.getParentId());
+            }
+        }
+        return packageName;
+    }
+
+    public ProjectResource moveFileName(Long projectResourceId, Long parentProjectResourceId) {
+        ProjectResource projectResource = resourceRepo.findById(projectResourceId).orElse(null);
+        if (null == projectResource) return null;
+        ProjectResource parentProjectResource = resourceRepo.findById(parentProjectResourceId).orElse(null);
+        if (null != parentProjectResource && !parentProjectResource.getType().equals(ResourceType.DIRECTORY)) {
+            return null;
+        }
+        if (projectResource.getType().equals(ResourceType.FILE)) {
+            String packageName = getPackageName(projectResource.getProjectId(), parentProjectResourceId);
+            String content = replacePackage(projectResource.getContent(), packageName);
+            projectResource.setContent(content);
+        }
+        projectResource.setParentId(parentProjectResourceId);
         return resourceRepo.save(projectResource);
     }
 
@@ -156,9 +202,15 @@ public class ProjectService {
         return resourceRepo.findById(projectResourceId).orElse(null);
     }
 
+    @SneakyThrows
     public ProjectResource updateFile(ProjectResource projectResource) {
         ProjectResource byId = resourceRepo.getById(projectResource.getId());
         if (byId == null) return byId;
+        if (StrUtil.isNotEmpty(projectResource.getContent())) {
+            Formatter formatter = new Formatter(JavaFormatterOptions.defaultOptions());
+            String formattedCode = formatter.formatSource(projectResource.getContent());
+            projectResource.setContent(formattedCode);
+        }
         return resourceRepo.save(projectResource);
     }
 
@@ -171,6 +223,12 @@ public class ProjectService {
 
     public ProjectResource reFileName(Long projectResourceId, String name) {
         return resourceRepo.findById(projectResourceId).map(resource -> {
+            if (StrUtil.isNotEmpty(resource.getContent())) {
+                String classNameByCode = getClassNameByCode(resource.getContent());
+                String className = StrUtil.subBefore(name, ".", true);
+                String replace = resource.getContent().replace(classNameByCode, className);
+                resource.setContent(replace);
+            }
             resource.setName(name);
             resourceRepo.save(resource);
             return resource;
@@ -181,8 +239,6 @@ public class ProjectService {
         List<String> contents = jdbcTemplate.queryForList(StrUtil.format("SELECT content FROM project_resource WHERE project_id ={}", projectId), String.class);
         return contents;
     }
-
-
 
 
     // 树节点 VO
@@ -201,6 +257,59 @@ public class ProjectService {
             this.type = r.getType();
             this.content = r.getContent();
             this.createTime = r.getCreateTime();
+        }
+    }
+
+    public String replacePackage(String codeInfo, String newPackageName) {
+        if (StrUtil.isEmpty(codeInfo)) return codeInfo;
+        String updatedContent = "";
+        if (StrUtil.isEmpty(newPackageName)) {
+            // 正则匹配 package 行，并删除它（包括前面的空白和注释）
+            Pattern pattern = Pattern.compile("^\\s*package\\s+[^;]+;\\s*", Pattern.MULTILINE);
+            Matcher matcher = pattern.matcher(codeInfo);
+            updatedContent = matcher.replaceFirst("");
+        } else {
+            // 正则匹配 package 行（忽略前导空格、注释等）
+            String regex = "(?m)^\\s*package\\s+[^;]+;";
+            String replacement = "package " + newPackageName + ";";
+            // 替换 package 语句
+            updatedContent = codeInfo.replaceAll(regex, replacement);
+            // 如果未替换成功（即原内容中没有 package 声明）
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(codeInfo);
+            boolean flag = matcher.find();
+            if (!flag) {
+                // 插入新的 package 声明到文件最开始处（跳过注释或空白）
+                String packageLine = "package " + newPackageName + ";\n\n";
+
+                // 去掉头部的空白、注释等，找到第一个非空白字符的位置
+                int firstNonWhitespaceIndex = 0;
+                while (firstNonWhitespaceIndex < codeInfo.length() &&
+                        Character.isWhitespace(codeInfo.charAt(firstNonWhitespaceIndex))) {
+                    firstNonWhitespaceIndex++;
+                }
+
+                // 在第一个有效字符前插入 package 声明
+                updatedContent = codeInfo.substring(0, firstNonWhitespaceIndex)
+                        .concat(packageLine)
+                        .concat(codeInfo.substring(firstNonWhitespaceIndex));
+            }
+        }
+        // 写回文件
+        return updatedContent;
+    }
+
+    public String getClassNameByCode(String code) {
+        try {
+            CompilationUnit parse = StaticJavaParser.parse(code);
+            TypeDeclaration<?> type = (TypeDeclaration) parse.findAll(TypeDeclaration.class).stream().findFirst().orElseThrow(() -> {
+                return new IllegalArgumentException("源码中未找到类定义");
+            });
+            String className = type.getNameAsString();
+            return className;
+        } catch (Exception var5) {
+            Exception e = var5;
+            throw new IllegalArgumentException("解析类名失败: " + e.getMessage(), e);
         }
     }
 }

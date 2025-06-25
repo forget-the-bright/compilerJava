@@ -158,7 +158,24 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
         jstree = fileBrowser.jstree({
             'core': {
                 'data': jstreeData.data,
-                "check_callback": true // 允许创建、删除、重命名等操作
+                //"check_callback": true,
+                "check_callback": function (operation, node, parent, position, more) {
+
+                    if (operation === 'move_node') { // move_node
+                        //console.log('operation', operation);
+                        console.log('parent.type', parent.type);
+                        // node 是要移动的节点，parent 是目标父节点
+                        if (parent.type === "#"){ // 根目录
+                            return true;
+                        }
+                        if (parent.type === "directory") { // 拖动目标是目录合理
+                            return true; // item → folder 合法
+                        } else {
+                            return false; // 其他组合不允许
+                        }
+                    }
+                    return true;// 允许创建、删除、重命名等操作
+                }
             },
             'types': {
                 'directory': {
@@ -168,7 +185,7 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
                     'icon': 'fas fa-code' //file
                 }
             },
-            'plugins': ['types', 'contextmenu'],
+            'plugins': ['types', 'contextmenu', 'dnd'], //类型支持,菜单支持,拖拽支持
             "contextmenu": {
 
                 // 自定义菜单项
@@ -202,6 +219,8 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
                                 });
                                 rdata = await rdata.json();
                                 console.log('childNode', rdata)
+                                editor.getModel().config = rdata;
+                                editor.getModel().setValue(rdata.content);
                                 //let currentNode = inst.get_node(data.reference);
                                 let childNode = {type: "file", id: rdata.id}
                                 console.log('childNode', childNode)
@@ -246,7 +265,16 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
                     }
                     return items;
                 }
-            }
+            },
+
+        });
+        // 展开节点
+        jstree.on("loaded.jstree", function (event, data) {
+            // 展开所有节点
+            //$('#jstree').jstree('open_all');
+            // 展开指定节点
+            //data.instance.open_node(1);     // 单个节点 （1 是顶层的id）
+            data.instance.open_node([1, 10]); // 多个节点 (展开多个几点只有在一次性装载后所有节点后才可行）
         });
         jstree.on('activate_node.jstree', function (e, data) {
             console.log('节点被激活:', data.node);
@@ -255,10 +283,17 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
         jstree.on('rename_node.jstree', function (e, data) {
             console.log('节点被激活:', data.node);
             // 在这里执行你想要的操作，比如打开一个新的页面、展示详细信息等
-
             fetch(`${window.baseUrl}/projects/${data.node.id}/reFileName?name=${data.node.text}`, {
                 method: 'GET' // 指定请求方法为 POST
-            })
+            }).then(response => response.text())
+                .then(content => {
+                    let data = JSON.parse(content);
+                    console.log(data)
+                    editor.getModel().config = data;
+                    console.log(editor.getModel())
+                    editor.getModel().setValue(data.content);
+                })
+                .catch(error => console.error('Error fetching file:', error));
         });
         // 监听点击事件
         jstree.on('select_node.jstree', function (e, data) {
@@ -277,6 +312,43 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
                     })
                     .catch(error => console.error('Error fetching file:', error));
             }
+        });
+
+
+        jstree.on('move_node.jstree', function (e, data) {
+            console.log('节点移动:', data);
+
+            /*
+             * data 包含以下属性：
+             * - node: 被移动的节点对象
+             * - parent: 新父节点的 ID
+             * - position: 新的位置（索引）
+             * - old_parent: 原父节点的 ID
+             * - old_position: 原位置（索引）
+             * - is_multi: 是否跨实例拖拽
+             * - is_copy: 是否是复制而非移动
+             */
+
+            // 示例：打印新旧位置信息
+            console.log('新的父节点ID:', data.parent);
+            console.log('新的位置:', data.position);
+            console.log('原父节点ID:', data.old_parent);
+            console.log('原位置:', data.old_position);
+            let parentId = data.parent;
+            if (data.parent === '#') {
+                parentId = 0;
+            }
+            // 在这里执行你想要的操作，比如打开一个新的页面、展示详细信息等
+            fetch(`${window.baseUrl}/projects/${data.node.id}/moveFileName?parentProjectResourceId=${parentId}`, {
+                method: 'GET' // 指定请求方法为 POST
+            }).then(response => response.text())
+                .then(content => {
+                    let data = JSON.parse(content);
+                    editor.getModel().config = data;
+                    editor.getModel().setValue(data.content);
+                })
+                .catch(error => console.error('Error fetching file:', error));
+            // 在这里执行你的逻辑，例如发送请求到服务器更新数据库
         });
     }
 

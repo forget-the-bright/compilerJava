@@ -37,13 +37,20 @@ public class ProjectController {
     @Operation(summary = "更新项目")
     @PostMapping("{projectId}/updateProject")
     public Project updateProject(@PathVariable Long projectId, @RequestBody CreateProjectDTO dto) {
-        return projectService.updateProject(projectId,dto);
+        return projectService.updateProject(projectId, dto);
     }
+
     @Operation(summary = "项目列表")
     @PostMapping("listProject")
     public List<Project> listProject() {
         return projectService.getProjects();
     }
+    @Operation(summary = "项目内容列表")
+    @PostMapping("{projectId}/listProjectSource")
+    public List<ProjectResource> listProjectSource(@PathVariable Long projectId) {
+        return projectService.listProjectSource(projectId);
+    }
+
     // 添加目录
     @Operation(summary = "添加目录")
     @PostMapping("/{projectId}/dirs")
@@ -85,6 +92,14 @@ public class ProjectController {
             @PathVariable Long ProjectResourceId,
             @RequestParam String name) {
         return projectService.reFileName(ProjectResourceId, name);
+    }
+
+    @Operation(summary = "文件移动")
+    @GetMapping("/{ProjectResourceId}/moveFileName")
+    public ProjectResource reFileName(
+            @PathVariable Long ProjectResourceId,
+            @RequestParam Long parentProjectResourceId) {
+        return projectService.moveFileName(ProjectResourceId, parentProjectResourceId);
     }
 
     @Operation(summary = "删除文件")

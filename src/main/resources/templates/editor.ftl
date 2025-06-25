@@ -124,7 +124,11 @@
                 throw new Error('Network response was not ok ' + response.statusText);
             }
             return response.json(); // 解析 JSON 格式的响应
-        }).then(data => console.log(data)) // 成功处理响应数据
+        }).then(data => {
+            console.log(data)
+            editor.getModel().config = data;
+            editor.getModel().setValue(data.content);
+        }) // 成功处理响应数据
             .catch(error => console.error('There was a problem with the fetch operation:', error));
     });
     // 编译按钮事件
