@@ -25,12 +25,30 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false # 是否打印 SQL
     database-platform: org.hibernate.dialect.H2Dialect
   h2:
     console:
       enabled: true
       path: /h2-console
+mybatis-plus:
+  mapper-locations: classpath*:**/mapper/xml/*.xml  # Mapper XML 文件位置
+  configuration:
+    mapUnderscoreToCamelCase: true              # 自动映射下划线转驼峰命名
+    #log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 控制台打印 SQL
+  global-config:
+    # 全局配置
+    db-config:
+      # 数据库配置
+      id-type: auto
+logging:
+  level:
+    org:
+      hibernate: warn # 设置整个hibernate包的日志级别为ERROR
+      hibernate.SQL: warn # 单独设置SQL语句的日志级别
+      hibernate.type.descriptor.sql.BasicBinder: warn # SQL参数绑定的日志级别
+      # 设置为OFF可以完全关闭该包下的日志输出
+      # hibernate: OFF
 # springdoc-openapi项目配置
 springdoc:
   swagger-ui:
@@ -48,4 +66,6 @@ knife4j:
   enable: true
   setting:
     language: zh_cn
-
+hao-util:
+  enabled: true
+  print-interface: false

@@ -1,6 +1,10 @@
 package org.hao.compiler.service;
 
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.TypeDeclaration;
@@ -16,15 +20,16 @@ import org.hao.compiler.entity.CreateProjectDTO;
 import org.hao.compiler.entity.Project;
 import org.hao.compiler.entity.ProjectResource;
 import org.hao.compiler.entity.ResourceType;
+import org.hao.compiler.mapper.ProjectResourceMapper;
 import org.hao.compiler.repository.ProjectRepository;
 import org.hao.compiler.repository.ProjectResourceRepository;
 import org.hao.core.compiler.CompilerUtil;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityGraph;
-import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
+//import javax.persistence.EntityGraph;
+//import javax.persistence.EntityManager;
+//import javax.persistence.TypedQuery;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.*;
@@ -45,10 +50,11 @@ import com.google.googlejavaformat.java.Formatter;
 @RequiredArgsConstructor
 public class ProjectService {
 
-    private final ProjectRepository projectRepo;
-    private final ProjectResourceRepository resourceRepo;
+//    private final ProjectRepository projectRepo;
+//    private final ProjectResourceRepository resourceRepo;
     private final Configuration freeMarkerConfig;
     private final JdbcTemplate jdbcTemplate;
+    private final ProjectResourceMapper resourceMapper;
 
     // 创建项目
     public Project createProject(String name, String mainClass, String creator) {
@@ -57,39 +63,57 @@ public class ProjectService {
         project.setMainClass(mainClass);
         project.setCreateTime(new Date());
         project.setCreator(creator);
-        return projectRepo.save(project);
+        Db.save(project);
+        return project;
+        //return projectRepo.save(project);
     }
 
     public Project updateProject(Long projectId, CreateProjectDTO dto) {
-        return projectRepo.findById(projectId).map(project -> {
+        Project byId = Db.getById(projectId, Project.class);
+        if (null == byId) return null;
+        byId.setName(dto.getName());
+        byId.setMainClass(dto.getMainClass());
+        byId.setCreator(dto.getCreator());
+        Db.updateById(byId);
+        return byId;
+       /* return projectRepo.findById(projectId).map(project -> {
             project.setName(dto.getName());
             project.setMainClass(dto.getMainClass());
             project.setCreator(dto.getCreator());
             return projectRepo.save(project);
-        }).orElse(null);
+        }).orElse(null);*/
     }
 
     public Project getProjectById(long projectId) {
-        return projectRepo.findById(projectId).orElse(null);
+        return Db.getById(projectId, Project.class);
+        //return projectRepo.findById(projectId).orElse(null);
     }
 
     public List<Project> getProjects() {
-        return projectRepo.findAll();
+        return Db.list(Project.class);
+        //return projectRepo.findAll();
     }
 
     public List<ProjectResource> listProjectSource(Long projectId) {
-        return resourceRepo.findByProjectId(projectId);
+        List<ProjectResource> list = Db.list(Wrappers.lambdaQuery(ProjectResource.class).eq(ProjectResource::getProjectId, projectId));
+        return list;
+        // return resourceRepo.findByProjectId(projectId);
     }
 
     // 添加目录
     public ProjectResource addDirectory(Long projectId, String dirName, Long parentId) {
-        return resourceRepo.save(ProjectResource.ofDir(dirName, projectId, parentId));
+        ProjectResource projectResource = ProjectResource.ofDir(dirName, projectId, parentId);
+        Db.save(projectResource);
+        return projectResource;
+        //return resourceRepo.save();
     }
 
     // 添加文件
     public ProjectResource addFile(Long projectId, String fileName, String content, Long parentId) throws IOException, TemplateException {
 
-        List<ProjectResource> resources = resourceRepo.findByProjectIdWithoutContent(projectId);
+
+        List<ProjectResource> resources = resourceMapper.findByProjectIdWithoutContent(projectId);
+        //List<ProjectResource> resources = resourceRepo.findByProjectIdWithoutContent(projectId);
         Map<Long, ProjectResource> collect = resources.stream().collect(Collectors.toMap(ProjectResource::getId, Function.identity()));
         // Map<Long, List<ProjectResource>> collect = resources.stream().collect(Collectors.groupingBy(ProjectResource::getParentId));
 
@@ -116,11 +140,14 @@ public class ProjectService {
         template.process(data, stringWriter);
         content = stringWriter.toString();
         ProjectResource projectResource = ProjectResource.ofFile(fileName, content, projectId, parentId);
-        return resourceRepo.save(projectResource);
+        Db.save(projectResource);
+        return projectResource;
+        //return resourceRepo.save(projectResource);
     }
 
     private String getPackageName(Long projectId, Long parentId) {
-        List<ProjectResource> resources = resourceRepo.findByProjectIdWithoutContent(projectId);
+        List<ProjectResource> resources = resourceMapper.findByProjectIdWithoutContent(projectId);
+        // List<ProjectResource> resources = resourceRepo.findByProjectIdWithoutContent(projectId);
         Map<Long, ProjectResource> collect = resources.stream().collect(Collectors.toMap(ProjectResource::getId, Function.identity()));
         ProjectResource parentPath = resources.stream().filter(r -> r.getId() == parentId).findFirst().orElse(null);
         String packageName = "";
@@ -137,9 +164,11 @@ public class ProjectService {
     }
 
     public ProjectResource moveFileName(Long projectResourceId, Long parentProjectResourceId) {
-        ProjectResource projectResource = resourceRepo.findById(projectResourceId).orElse(null);
+        ProjectResource projectResource = resourceMapper.selectById(projectResourceId);
+        //ProjectResource projectResource = resourceRepo.findById(projectResourceId).orElse(null);
         if (null == projectResource) return null;
-        ProjectResource parentProjectResource = resourceRepo.findById(parentProjectResourceId).orElse(null);
+        ProjectResource parentProjectResource = resourceMapper.selectById(parentProjectResourceId);
+        //ProjectResource parentProjectResource = resourceRepo.findById(parentProjectResourceId).orElse(null);
         if (null != parentProjectResource && !parentProjectResource.getType().equals(ResourceType.DIRECTORY)) {
             return null;
         }
@@ -149,14 +178,17 @@ public class ProjectService {
             projectResource.setContent(content);
         }
         projectResource.setParentId(parentProjectResourceId);
-        return resourceRepo.save(projectResource);
+        resourceMapper.insertOrUpdate(projectResource);
+        return projectResource;
+        //return resourceRepo.save(projectResource);
     }
 
     // 获取某个项目的目录树（递归构建）
     public List<TreeVO> getProjectTree(Long projectId) {
         //  List<ProjectResource> resources = resourceRepo.findByProjectId(projectId);
         //List<ProjectResource> resources = findResourcesWithoutContent(projectId);
-        List<ProjectResource> resources = resourceRepo.findByProjectIdWithoutContent(projectId);
+        List<ProjectResource> resources = resourceMapper.findByProjectIdWithoutContent(projectId);
+        // List<ProjectResource> resources = resourceRepo.findByProjectIdWithoutContent(projectId);
         Map<Long, TreeVO> map = new HashMap<>();
         List<TreeVO> rootNodes = new ArrayList<>();
 
@@ -177,52 +209,52 @@ public class ProjectService {
         return rootNodes;
     }
 
-    private final EntityManager entityManager;
-
-    public List<ProjectResource> findResourcesWithoutContent(Long projectId) {
-        // 创建动态 EntityGraph
-        EntityGraph<ProjectResource> graph = entityManager.createEntityGraph(ProjectResource.class);
-
-        // 添加你希望加载的字段
-        graph.addAttributeNodes("id", "projectId", "parentId", "name", "type", "createTime");
-
-        // 构建查询并设置 fetchgraph
-        TypedQuery<ProjectResource> query = entityManager.createQuery(
-                "SELECT p FROM ProjectResource p WHERE p.projectId = :projectId", ProjectResource.class
-        );
-        query.setParameter("projectId", projectId); // 示例参数
-
-        // 设置加载图
-        query.setHint("javax.persistence.fetchgraph", graph);
-
-        return query.getResultList();
-    }
 
     public ProjectResource getProjectSourceById(Long projectResourceId) {
-        return resourceRepo.findById(projectResourceId).orElse(null);
+        ProjectResource byId = Db.getById(projectResourceId, ProjectResource.class);
+//        resourceRepo.findById(projectResourceId).orElse(null);
+        return byId;
     }
 
     @SneakyThrows
     public ProjectResource updateFile(ProjectResource projectResource) {
-        ProjectResource byId = resourceRepo.getById(projectResource.getId());
+        ProjectResource byId = resourceMapper.selectById(projectResource.getId());
+        // ProjectResource byId = resourceRepo.getById(projectResource.getId());
         if (byId == null) return byId;
         if (StrUtil.isNotEmpty(projectResource.getContent())) {
             Formatter formatter = new Formatter(JavaFormatterOptions.defaultOptions());
             String formattedCode = formatter.formatSource(projectResource.getContent());
             projectResource.setContent(formattedCode);
         }
-        return resourceRepo.save(projectResource);
+        resourceMapper.insertOrUpdate(projectResource);
+        return projectResource;
+        //return resourceRepo.save(projectResource);
     }
 
     public ProjectResource removeProjectSourceById(Long projectResourceId) {
-        return resourceRepo.findById(projectResourceId).map(resource -> {
+        ProjectResource byId = resourceMapper.selectById(projectResourceId);
+        if (byId == null) return null;
+        byId.deleteById();
+        return byId;
+/*        return resourceRepo.findById(projectResourceId).map(resource -> {
             resourceRepo.delete(resource);
             return resource;
-        }).orElse(null);
+        }).orElse(null);*/
     }
 
     public ProjectResource reFileName(Long projectResourceId, String name) {
-        return resourceRepo.findById(projectResourceId).map(resource -> {
+        ProjectResource byId = resourceMapper.selectById(projectResourceId);
+        if (byId == null) return null;
+        if (StrUtil.isNotEmpty(byId.getContent())) {
+            String classNameByCode = getClassNameByCode(byId.getContent());
+            String className = StrUtil.subBefore(name, ".", true);
+            String replace = byId.getContent().replace(classNameByCode, className);
+            byId.setContent(replace);
+        }
+        byId.setName(name);
+        resourceMapper.insertOrUpdate(byId);
+        return byId;
+      /*  return resourceRepo.findById(projectResourceId).map(resource -> {
             if (StrUtil.isNotEmpty(resource.getContent())) {
                 String classNameByCode = getClassNameByCode(resource.getContent());
                 String className = StrUtil.subBefore(name, ".", true);
@@ -232,11 +264,14 @@ public class ProjectService {
             resource.setName(name);
             resourceRepo.save(resource);
             return resource;
-        }).orElse(null);
+        }).orElse(null);*/
     }
 
     public List<String> getProjectSourceContentsByProjectId(long projectId) {
-        List<String> contents = jdbcTemplate.queryForList(StrUtil.format("SELECT content FROM project_resource WHERE project_id ={}", projectId), String.class);
+        List<String> contents = resourceMapper.selectObjs(Wrappers.lambdaQuery(ProjectResource.class)
+                .select(ProjectResource::getContent)
+                .eq(ProjectResource::getProjectId, projectId));
+        //List<String> contents = jdbcTemplate.queryForList(StrUtil.format("SELECT content FROM project_resource WHERE project_id ={}", projectId), String.class);
         return contents;
     }
 
