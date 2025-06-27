@@ -78,14 +78,14 @@
         term.loadAddon(fitAddon);
         term.open(document);
         fitAddon.fit();
+        // 加载并启用 WebLinksAddon，这允许识别和点击网页链接
+        term.loadAddon(new WebLinksAddon());
         return {term, fitAddon};
     }
 
     const {term: logWindowTerm, fitAddon: logWindowFitAddon} = getTermAndFitAddon(10000, $('#logWindow')[0]);
     const {term: resultWindowTerm, fitAddon: resultWindowFitAddon} = getTermAndFitAddon(10000, $('#result')[0]);
 
-    // 加载并启用 WebLinksAddon，这允许识别和点击网页链接
-    logWindowTerm.loadAddon(new WebLinksAddon());
     let resizeTimeout;
     // 同时监听 Golden Layout 的更新事件
     layout.on('stateChanged', function () {
@@ -103,82 +103,18 @@
         message = base64ToUtf8(message);
         logWindowTerm.write(message);
     };
-    $('#saveFile').click(function () {
-        let config = editor.getModel().config;
-        if (!config) {
-            alert('请选择文件');
-            return;
-        }
-        config.content = getCode();
-        // 使用 fetch 发送 POST 请求
-        fetch(`${domainUrl}/projects/updateFile`, {
-            method: 'POST', // 指定请求方法为 POST
-            headers: {
-                'Content-Type': 'application/json', // 设置请求头，表明请求体是 JSON 格式
-                // 如果需要身份验证或其他类型的头信息，可以在这里添加
-                // 'Authorization': 'Bearer your-token'
-            },
-            body: JSON.stringify(config), // 将 JavaScript 对象转换为 JSON 字符串
-        }).then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok ' + response.statusText);
-            }
-            return response.json(); // 解析 JSON 格式的响应
-        }).then(data => {
-            console.log(data)
-            editor.getModel().config = data;
-            editor.getModel().setValue(data.content);
-        }) // 成功处理响应数据
-            .catch(error => console.error('There was a problem with the fetch operation:', error));
-    });
-    // 编译按钮事件
-    $('#compileSseBtn').click(function () {
-        var eventSource = new EventSource('${domainUrl}/compile/sse?code=' + encodeURIComponent(getCode()), {
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'}
-        });
-        $('#compileSseBtn').prop("disabled", true);
-        eventSource.onmessage = function (e) {
-            let message = e.data;
-            message = base64ToUtf8(message);
-            resultWindowTerm.write(message);
-        };
-        eventSource.onerror = function () {
-            eventSource.close();
-            $('#compileSseBtn').prop("disabled", false);
-        };
-    });
-    $('#compileProjectSseBtn').click(function () {
-        var eventSource = new EventSource('${domainUrl}/compileProject/sse?projectId=1', {
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'}
-        });
-        $('#compileProjectSseBtn').prop("disabled", true);
-        eventSource.onmessage = function (e) {
-            let message = e.data;
-            message = base64ToUtf8(message);
-            resultWindowTerm.write(message);
-        };
-        eventSource.onerror = function () {
-            eventSource.close();
-            console.log('compileProject eventSource is error close ');
-            $('#compileProjectSseBtn').prop("disabled", false);
-        };
-    });
 
+    //保存文件按钮事件
+    $('#saveFile').click(() => saveEditorFile(true));
+    // 编译按钮事件
+    $('#compileSseBtn').click(() => compileCurrentCode(resultWindowTerm));
+    // 编译项目按钮事件
+    $('#compileProjectSseBtn').click(() => compileProjectCode(resultWindowTerm));
     // 清除日志按钮事件
-    $('#clearLogsBtn').click(function () {
+    $('#clearLogsBtn').click(() => {
         resultWindowTerm.clear();
         logWindowTerm.clear();
     });
-
-    function getCode() {
-        return editor ? editor.getValue() : '';
-    }
-
-    function base64ToUtf8(base64) {
-        return decodeURIComponent(Array.prototype.map.call(atob(base64), function (c) {
-            return '%' + c.charCodeAt(0).toString(16).padStart(2, '0');
-        }).join(''));
-    }
 
 </script>
 </body>

@@ -1,3 +1,4 @@
+//region 黄金布局配置信息
 var otherLayoutConfig = {
     settings: {
         hasHeaders: true, // 开启或关闭标题栏。如果设置为 false，布局将仅显示分隔条。
@@ -27,8 +28,6 @@ var otherLayoutConfig = {
         popout: '在新窗口打开' // 将鼠标悬停在弹出图标上时出现的工具提示文本。
     },
 }
-
-
 // layout-config.js
 var GoldenConfig = {
     settings: otherLayoutConfig.settings,
@@ -107,7 +106,9 @@ var GoldenConfig = {
         },
     ]
 };
+//endregion
 
+// region 黄金布局组件注册
 const GoldenComponentMap = new Map();
 GoldenComponentMap.set('editor', function (container, state) {
     container.getElement().html('<div class="monaco-editor-container" id="editor"></div>');
@@ -131,6 +132,13 @@ GoldenComponentMap.set('editor', function (container, state) {
                 editor.getModel().setValue(data.content);
             })
             .catch(error => console.error('Error fetching file:', error));
+
+        // 自定义 Ctrl+S 的行为
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function () {
+            console.log('用户按下了 Ctrl + S，正在执行保存操作');
+            // 在这里执行你的保存逻辑，例如：
+            saveEditorFile(true);
+        });
     });
 
 
@@ -150,32 +158,16 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
         .then(content => {
             let jstreeData = convertData(JSON.parse(content));
             initJStree(jstreeData, fileBrowser);
+
         }).catch(error => console.error('Error fetching file:', error));
 
     function initJStree(jstreeData, fileBrowser) {
-        console.log(jstreeData);
-        var jstree;
+        let jstree;
         jstree = fileBrowser.jstree({
             'core': {
                 'data': jstreeData.data,
                 //"check_callback": true,
-                "check_callback": function (operation, node, parent, position, more) {
-
-                    if (operation === 'move_node') { // move_node
-                        //console.log('operation', operation);
-                        console.log('parent.type', parent.type);
-                        // node 是要移动的节点，parent 是目标父节点
-                        if (parent.type === "#"){ // 根目录
-                            return true;
-                        }
-                        if (parent.type === "directory") { // 拖动目标是目录合理
-                            return true; // item → folder 合法
-                        } else {
-                            return false; // 其他组合不允许
-                        }
-                    }
-                    return true;// 允许创建、删除、重命名等操作
-                }
+                "check_callback": JSTreeCheckCallback
             },
             'types': {
                 'directory': {
@@ -187,87 +179,117 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
             },
             'plugins': ['types', 'contextmenu', 'dnd'], //类型支持,菜单支持,拖拽支持
             "contextmenu": {
-
                 // 自定义菜单项
-                items: function (node) {
-                    console.log(' node', node);
-                    let inst = $('#fileBrowser').jstree(true);
-                    let items = {};
-                    if (node.type === 'directory') {
-                        items['新建文件夹'] = {
-                            "label": "新建文件夹",
-                            'icon': 'fas fa-folder',
-                            "action": async function (data) {
-                                // let inst = $.jstree.reference(data.reference)
-                                let rdata = await fetch(`${window.baseUrl}/projects/1/dirs?name=${encodeURIComponent("temp")}&parentId=${node.id}`, {
-                                    method: 'POST'
-                                });
-                                rdata = await rdata.json();
-                                let childNode = {type: "directory", id: rdata.id}
-                                inst.create_node(node, childNode, "last", function (new_node) {
-                                    new_node.text = "temp";
-                                    inst.edit(new_node);
-                                });
-                            }
-                        }
-                        items['新建文件'] = {
-                            "label": "新建文件",
-                            'icon': 'fas fa-code',
-                            "action": async function (data) {
-                                let rdata = await fetch(`${window.baseUrl}/projects/1/files?name=${encodeURIComponent("temp.java")}&parentId=${node.id}&content=''`, {
-                                    method: 'POST'
-                                });
-                                rdata = await rdata.json();
-                                console.log('childNode', rdata)
-                                editor.getModel().config = rdata;
-                                editor.getModel().setValue(rdata.content);
-                                //let currentNode = inst.get_node(data.reference);
-                                let childNode = {type: "file", id: rdata.id}
-                                console.log('childNode', childNode)
-                                inst.create_node(node, childNode, "last", function (new_node) {
-                                    new_node.text = "temp.java";
-                                    inst.edit(new_node);
-                                });
-                            }
-                        }
-                    }
-                    if (!(node.children && node.children.length > 0)) {
-                        items['删除节点'] = {
-                            "label": "删除",
-                            'icon': 'fas fa-del',
-                            "action": async function (data) {
-                                let parentNode = inst.get_node(data.reference);
-                                //  console.log('parentNode', parentNode)
-                                //自定义属性通过original 获取
-                                //  console.log('parentNode.original.system', parentNode.original.system)
-                                if (parentNode.original.system) {
-                                    //alert("当前是系统文件不能删除！！！");
-                                    // return;
-                                }
-                                if (!confirm('确定要删除吗？')) {
-                                    return;
-                                }
-                                inst.delete_node(parentNode);
-                                let rdata = await fetch(`${window.baseUrl}/projects/${node.id}/removeById`, {
-                                    method: 'DELETE'
-                                });
-
-                            }
-                        }
-                    }
-
-                    items['重命名'] = {
-                        "label": "重命名",
-                        'icon': 'fas fa-code',
-                        "action": async function (data) {
-                            inst.edit(node);
-                        }
-                    }
-                    return items;
-                }
+                "items": fillJSTreeMenuItems
             },
-
         });
+        //绑定事件
+        fillJSTreeEvent(jstree);
+    }
+
+    //jstree 回调检测函数，返回true, 放过对应事件,返回false, 拦截对应事件
+    function JSTreeCheckCallback(operation, node, parent, position, more) {
+        if (operation === 'move_node') { // move_node
+            //console.log('operation', operation);
+            console.log('parent.type', parent.type);
+            // node 是要移动的节点，parent 是目标父节点
+            if (parent.type === "#") { // 根目录
+                return true;
+            }
+            if (parent.type === "directory") { // 拖动目标是目录合理
+                return true; // item → folder 合法
+            } else {
+                return false; // 其他组合不允许
+            }
+        }
+        return true;// 允许创建、删除、重命名等操作
+    }
+
+    //jstree 绑定右键菜单
+    function fillJSTreeMenuItems(node) {
+        let inst = $('#fileBrowser').jstree(true);
+        let items = {};
+        // 只有文件夹目录才能有的事件， 新建文件夹 和 新建文件
+        if (node.type === 'directory') {
+            items['新建文件夹'] = {
+                "label": "新建文件夹",
+                'icon': 'fas fa-folder',
+                "action": async function (data) {
+                    // let inst = $.jstree.reference(data.reference)
+                    let rdata =
+                        await fetch(`${window.baseUrl}/projects/1/dirs?name=${encodeURIComponent("temp")}&parentId=${node.id}`,
+                            {
+                                method: 'POST'
+                            });
+                    rdata = await rdata.json();
+                    let childNode = {type: "directory", id: rdata.id}
+                    inst.create_node(node, childNode, "last", function (new_node) {
+                        new_node.text = "temp";
+                        inst.edit(new_node);
+                    });
+                }
+            }
+            items['新建文件'] = {
+                "label": "新建文件",
+                'icon': 'fas fa-code',
+                "action": async function (data) {
+                    let rdata =
+                        await fetch(`${window.baseUrl}/projects/1/files?name=${encodeURIComponent("temp.java")}&parentId=${node.id}&content=''`,
+                            {
+                                method: 'POST'
+                            });
+                    rdata = await rdata.json();
+                    editor.getModel().config = rdata;
+                    editor.getModel().setValue(rdata.content);
+                    //let currentNode = inst.get_node(data.reference);
+                    let childNode = {type: "file", id: rdata.id}
+                    //console.log('childNode', childNode)
+                    inst.create_node(node, childNode, "last", function (new_node) {
+                        new_node.text = "temp.java";
+                        inst.edit(new_node);
+                    });
+                }
+            }
+        }
+        //只有当前节点下没有子节点才可以删除
+        if (!(node.children && node.children.length > 0)) {
+            items['删除节点'] = {
+                "label": "删除",
+                'icon': 'fas fa-del',
+                "action": async function (data) {
+                    let parentNode = inst.get_node(data.reference);
+                    //  自定义属性通过original 获取
+                    //  console.log('parentNode.original.system', parentNode.original.system)
+                    if (parentNode.original.system) {
+                        // 通过判断节点的自定义属性来确定是否是系统文件,节点初始化赋值的属性
+                        // alert("当前是系统文件不能删除！！！");
+                        // return;
+                    }
+                    if (!confirm('确定要删除吗？')) {
+                        return;
+                    }
+                    inst.delete_node(parentNode);
+                    let rdata =
+                        await fetch(`${window.baseUrl}/projects/${node.id}/removeById`,
+                            {
+                                method: 'DELETE'
+                            });
+
+                }
+            }
+        }
+        items['重命名'] = {
+            "label": "重命名",
+            'icon': 'fas fa-code',
+            "action": async function (data) {
+                inst.edit(node);
+            }
+        }
+        return items;
+    }
+
+    //jstree 绑定事件
+    function fillJSTreeEvent(jstree) {
         // 展开节点
         jstree.on("loaded.jstree", function (event, data) {
             // 展开所有节点
@@ -276,21 +298,19 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
             //data.instance.open_node(1);     // 单个节点 （1 是顶层的id）
             data.instance.open_node([1, 10]); // 多个节点 (展开多个几点只有在一次性装载后所有节点后才可行）
         });
+        // 节点激活事件
         jstree.on('activate_node.jstree', function (e, data) {
-            console.log('节点被激活:', data.node);
             // 在这里执行你想要的操作，比如打开一个新的页面、展示详细信息等
         });
+        // 节点重命名
         jstree.on('rename_node.jstree', function (e, data) {
-            console.log('节点被激活:', data.node);
             // 在这里执行你想要的操作，比如打开一个新的页面、展示详细信息等
             fetch(`${window.baseUrl}/projects/${data.node.id}/reFileName?name=${data.node.text}`, {
                 method: 'GET' // 指定请求方法为 POST
             }).then(response => response.text())
                 .then(content => {
                     let data = JSON.parse(content);
-                    console.log(data)
                     editor.getModel().config = data;
-                    console.log(editor.getModel())
                     editor.getModel().setValue(data.content);
                 })
                 .catch(error => console.error('Error fetching file:', error));
@@ -299,25 +319,17 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
         jstree.on('select_node.jstree', function (e, data) {
             if (data.node.type === 'file') {
                 const fileNode = data.node;
-                const ProjectResourceId = data.node.id;
                 console.log(fileNode)
-                fetch(`${window.baseUrl}/projects/${ProjectResourceId}/file`)
-                    .then(response => response.text())
-                    .then(content => {
-                        let data = JSON.parse(content);
-                        console.log(data)
-                        editor.getModel().config = data;
-                        console.log(editor.getModel())
-                        editor.getModel().setValue(data.content);
-                    })
-                    .catch(error => console.error('Error fetching file:', error));
+                const ProjectResourceId = data.node.id;
+                // 保存编辑器当前文件内容
+                saveEditorFile(false);
+                // 填充编辑器文件内容,根据选择的文件id
+                fillEditorFileContent(ProjectResourceId);
+
             }
         });
-
-
+        // 节点移动事件
         jstree.on('move_node.jstree', function (e, data) {
-            console.log('节点移动:', data);
-
             /*
              * data 包含以下属性：
              * - node: 被移动的节点对象
@@ -329,13 +341,8 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
              * - is_copy: 是否是复制而非移动
              */
 
-            // 示例：打印新旧位置信息
-            console.log('新的父节点ID:', data.parent);
-            console.log('新的位置:', data.position);
-            console.log('原父节点ID:', data.old_parent);
-            console.log('原位置:', data.old_position);
             let parentId = data.parent;
-            if (data.parent === '#') {
+            if (data.parent === '#') { // 根节点
                 parentId = 0;
             }
             // 在这里执行你想要的操作，比如打开一个新的页面、展示详细信息等
@@ -353,7 +360,9 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
     }
 
 });
+// endregion
 
+//region 工具类方法
 function transformNode(node) {
     const isFile = node.type === 'FILE';
     const transformed = {
@@ -389,3 +398,98 @@ function convertData(input) {
     return {data: result};
 }
 
+function getCode() {
+    return editor ? editor.getValue() : '';
+}
+
+function base64ToUtf8(base64) {
+    return decodeURIComponent(Array.prototype.map.call(atob(base64), function (c) {
+        return '%' + c.charCodeAt(0).toString(16).padStart(2, '0');
+    }).join(''));
+}
+
+//endregion
+
+//region 后端交互方法
+
+//保存文件函数
+function saveEditorFile(flushEditorContent) {
+    let config = editor.getModel().config;
+    if (!config) {
+        // alert('请选择文件');
+        return;
+    }
+    config.content = getCode();
+    // 使用 fetch 发送 POST 请求
+    fetch(`${window.baseUrl}/projects/updateFile`, {
+        method: 'POST', // 指定请求方法为 POST
+        headers: {
+            'Content-Type': 'application/json', // 设置请求头，表明请求体是 JSON 格式
+            // 如果需要身份验证或其他类型的头信息，可以在这里添加
+            // 'Authorization': 'Bearer your-token'
+        },
+        body: JSON.stringify(config), // 将 JavaScript 对象转换为 JSON 字符串
+    }).then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok ' + response.statusText);
+        }
+        return response.json(); // 解析 JSON 格式的响应
+    }).then(data => {
+        console.log(data)
+        if (flushEditorContent) {
+            editor.getModel().config = data;
+            editor.getModel().setValue(data.content);
+        }
+    }) // 成功处理响应数据
+        .catch(error => console.error('There was a problem with the fetch operation:', error));
+}
+
+//编译当前文件函数
+function compileCurrentCode(resultWindowTerm) {
+    var eventSource = new EventSource(`${window.baseUrl}/compile/sse?code=${encodeURIComponent(getCode())}`, {
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+    });
+    $('#compileSseBtn').prop("disabled", true);
+    eventSource.onmessage = function (e) {
+        let message = e.data;
+        message = base64ToUtf8(message);
+        resultWindowTerm.write(message);
+    };
+    eventSource.onerror = function () {
+        eventSource.close();
+        $('#compileSseBtn').prop("disabled", false);
+    };
+}
+
+// 编译项目代码
+function compileProjectCode(resultWindowTerm) {
+    let projectId = 1;
+    var eventSource = new EventSource(`${window.baseUrl}/compileProject/sse?projectId=${projectId}`, {
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+    });
+    $('#compileProjectSseBtn').prop("disabled", true);
+    eventSource.onmessage = function (e) {
+        let message = e.data;
+        message = base64ToUtf8(message);
+        resultWindowTerm.write(message);
+    };
+    eventSource.onerror = function () {
+        eventSource.close();
+        console.log('compileProject eventSource is error close ');
+        $('#compileProjectSseBtn').prop("disabled", false);
+    };
+}
+
+// 填充编辑器文件内容,根据选择的文件id
+function fillEditorFileContent(ProjectResourceId) {
+    fetch(`${window.baseUrl}/projects/${ProjectResourceId}/file`)
+        .then(response => response.text())
+        .then(content => {
+            let data = JSON.parse(content);
+            editor.getModel().config = data;
+            editor.getModel().setValue(data.content);
+        })
+        .catch(error => console.error('Error fetching file:', error));
+}
+
+//endregion
