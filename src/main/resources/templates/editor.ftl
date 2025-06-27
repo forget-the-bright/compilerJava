@@ -133,8 +133,6 @@
     });
     // 编译按钮事件
     $('#compileSseBtn').click(function () {
-
-
         var eventSource = new EventSource('${domainUrl}/compile/sse?code=' + encodeURIComponent(getCode()), {
             headers: {'Content-Type': 'application/x-www-form-urlencoded'}
         });
