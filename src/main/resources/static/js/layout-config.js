@@ -113,6 +113,7 @@ const GoldenComponentMap = new Map();
 GoldenComponentMap.set('editor', function (container, state) {
     container.getElement().html('<div class="monaco-editor-container" id="editor"></div>');
     let editorContainer = container.getElement().find('.monaco-editor-container')[0];
+    require.config({paths: {'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@latest/min/vs'}});
     // 创建 WebSocket 实例
     //const webSocket = new WebSocket(`${window.wsUrl}/lsp`); // 替换为你的WebSocket地址
     require([

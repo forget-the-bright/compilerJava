@@ -31,6 +31,19 @@ public class CompilerController {
 
     @Operation(summary = "首页")
     @GetMapping("/")
+    public ModelAndView index() {
+        ModelAndView modelAndView = new ModelAndView("index");
+        modelAndView.addObject("title", "在线 Java 编译器");
+        modelAndView.addObject("domainUrl", IPUtils.getBaseUrl());
+        modelAndView.addObject("wsUrl", IPUtils.getBaseUrl().replace("http://", "ws://"));
+        List<Project> projects = projectService.getProjects();
+        modelAndView.addObject("projects", projects);
+        modelAndView.addObject("projectSize", projects.size());
+        return modelAndView;
+    }
+
+    @Operation(summary = "编辑器界面")
+    @GetMapping("/editor")
     public ModelAndView editor() {
         ModelAndView modelAndView = new ModelAndView("editor");
         modelAndView.addObject("title", "在线 Java 编译器");
@@ -100,7 +113,7 @@ public class CompilerController {
                 // 定义方法名及参数类型
                 String methodName = "main";
                 Class<?>[] parameterTypes = new Class[]{String[].class};
-                Method main = ReflectUtil.getMethod(aClass, methodName,parameterTypes);
+                Method main = ReflectUtil.getMethod(aClass, methodName, parameterTypes);
                 if (main == null) {
                     SseUtil.sendMegBase64(emitter, "项目主类没有入口函数 main！");
                     return;
@@ -111,7 +124,7 @@ public class CompilerController {
                 SseUtil.sendMegBase64(emitter, "执行完毕！\r\n");
             } catch (Exception e) {
                 try {
-                    SseUtil.sendMegBase64(emitter, "编译异常：" + e.getMessage() +"\r\n");
+                    SseUtil.sendMegBase64(emitter, "编译异常：" + e.getMessage() + "\r\n");
                 } catch (IOException ignored) {
                 }
                 e.printStackTrace();

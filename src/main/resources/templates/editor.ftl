@@ -14,7 +14,7 @@
     <!-- jstree -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
-    <link rel="stylesheet" href="${domainUrl}/css/style.css">
+    <link rel="stylesheet" href="${domainUrl}/css/editor.css">
 
     <script>
         window.baseUrl = "${domainUrl}";
@@ -41,9 +41,7 @@
 <script src="${domainUrl}/js/demo_code.js"></script>
 <script src="${domainUrl}/js/layout-config.js"></script>
 
-
-<script type="module">
-
+<script>
     var editor;
     var layout;
     // 初始化布局
@@ -59,12 +57,15 @@
         } catch (e) {
         }
     });
+</script>
+<script type="module">
     // 初始化布局
     layout.init();
 
     import {Terminal} from 'https://esm.sh/xterm@latest'
     import {FitAddon} from 'https://esm.sh/xterm-addon-fit@latest';
     import {WebLinksAddon} from 'https://esm.sh/xterm-addon-web-links@latest';
+
     function getTermAndFitAddon(scrollback, document) {
         let term = new Terminal({
             cursorBlink: true,
