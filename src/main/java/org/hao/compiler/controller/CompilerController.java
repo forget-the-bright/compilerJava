@@ -35,6 +35,7 @@ public class CompilerController {
         ModelAndView modelAndView = new ModelAndView("editor");
         modelAndView.addObject("title", "在线 Java 编译器");
         modelAndView.addObject("domainUrl", IPUtils.getBaseUrl());
+        modelAndView.addObject("wsUrl", IPUtils.getBaseUrl().replace("http://", "ws://"));
         return modelAndView;
     }
 

@@ -4,6 +4,7 @@
     <title>在线代码编辑器</title>
     <meta charset="UTF-8">
 
+    <#--    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/editor/editor.main.min.css">-->
     <!-- Golden Layout -->
     <link type="text/css" rel="stylesheet" href="https://golden-layout.com/files/latest/css/goldenlayout-base.css"/>
     <link type="text/css" rel="stylesheet"
@@ -17,6 +18,7 @@
 
     <script>
         window.baseUrl = "${domainUrl}";
+        window.wsUrl = "${wsUrl}";
     </script>
 </head>
 <body>
@@ -34,10 +36,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/jstree.min.js"></script>
 <script src="https://golden-layout.com/files/latest/js/goldenlayout.min.js"></script>
 <!-- Monaco Editor loader -->
-<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@latest/min/vs/loader.js"></script>
+
 <script src="${domainUrl}/js/demo_code.js"></script>
 <script src="${domainUrl}/js/layout-config.js"></script>
-<script>
+
+
+<script type="module">
+
     var editor;
     var layout;
     // 初始化布局
@@ -53,15 +59,12 @@
         } catch (e) {
         }
     });
-</script>
-
-<script type="module">
     // 初始化布局
     layout.init();
+
     import {Terminal} from 'https://esm.sh/xterm@latest'
     import {FitAddon} from 'https://esm.sh/xterm-addon-fit@latest';
     import {WebLinksAddon} from 'https://esm.sh/xterm-addon-web-links@latest';
-
     function getTermAndFitAddon(scrollback, document) {
         let term = new Terminal({
             cursorBlink: true,
@@ -118,4 +121,4 @@
 
 </script>
 </body>
-</html> 
+</html>

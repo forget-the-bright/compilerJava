@@ -112,35 +112,36 @@ var GoldenConfig = {
 const GoldenComponentMap = new Map();
 GoldenComponentMap.set('editor', function (container, state) {
     container.getElement().html('<div class="monaco-editor-container" id="editor"></div>');
-    require.config({paths: {'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs'}});
-    require(['vs/editor/editor.main'], function () {
-        editor = monaco.editor.create(container.getElement().find('.monaco-editor-container')[0], {
+    let editorContainer = container.getElement().find('.monaco-editor-container')[0];
+    // 创建 WebSocket 实例
+    //const webSocket = new WebSocket(`${window.wsUrl}/lsp`); // 替换为你的WebSocket地址
+    require([
+        'vs/editor/editor.main',
+    ], function (monaco,mlc) {
+        console.log(mlc ?? undefined)
+        editor = monaco.editor.create(editorContainer, {
             value: [getDemoCode()].join('\n'),
             language: 'java',
             theme: 'vs-light',
             fontSize: 16,
             automaticLayout: true
         });
+        let fileId = 5;
+        // 填充文件内容
+        fillEditorFileContent(fileId);
+        // 填充命令
+        fillEditorCommand();
+    });
 
-        fetch(`${window.baseUrl}/projects/5/file`)
-            .then(response => response.text())
-            .then(content => {
-                let data = JSON.parse(content);
-                console.log(data)
-                editor.getModel().config = data;
-                console.log(editor.getModel())
-                editor.getModel().setValue(data.content);
-            })
-            .catch(error => console.error('Error fetching file:', error));
-
+    //这里require是异步,所以这个方法要在回调中执行。
+    function fillEditorCommand() {
         // 自定义 Ctrl+S 的行为
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function () {
             console.log('用户按下了 Ctrl + S，正在执行保存操作');
             // 在这里执行你的保存逻辑，例如：
             saveEditorFile(true);
         });
-    });
-
+    }
 
 });
 GoldenComponentMap.set('output', function (container, state) {
@@ -483,9 +484,8 @@ function compileProjectCode(resultWindowTerm) {
 // 填充编辑器文件内容,根据选择的文件id
 function fillEditorFileContent(ProjectResourceId) {
     fetch(`${window.baseUrl}/projects/${ProjectResourceId}/file`)
-        .then(response => response.text())
-        .then(content => {
-            let data = JSON.parse(content);
+        .then(response => response.json())
+        .then(data => {
             editor.getModel().config = data;
             editor.getModel().setValue(data.content);
         })
