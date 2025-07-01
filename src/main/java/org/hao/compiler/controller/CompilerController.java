@@ -55,12 +55,17 @@ public class CompilerController {
     @Operation(summary = "编译代码SSE")
     @GetMapping("/compile/sse")
     @ResponseBody
-    public SseEmitter compileSse(@RequestParam String code) {
+    public SseEmitter compileSse(@RequestParam String ProjectResourceId) {
         SseEmitter emitter = new SseEmitter();
         new Thread(() -> {
             try {
+                if (StrUtil.isEmpty(ProjectResourceId)){
+                    SseUtil.sendMegBase64(emitter, "文件id为空,请选择代码文件\r\n");
+                    return;
+                }
+                String code = projectService.getProjectSourceById(Long.parseLong(ProjectResourceId)).getContent();
                 if (StrUtil.isEmpty(code)) {
-                    emitter.send("代码不能为空，请输入代码！");
+                    SseUtil.sendMegBase64(emitter, "代码不能为空，请输入代码！\r\n");
                     return;
                 }
                 SseEmitterWriter sseEmitterWriter = new SseEmitterWriter(emitter);

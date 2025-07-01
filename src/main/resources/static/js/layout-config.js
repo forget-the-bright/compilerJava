@@ -118,7 +118,7 @@ GoldenComponentMap.set('editor', function (container, state) {
     //const webSocket = new WebSocket(`${window.wsUrl}/lsp`); // 替换为你的WebSocket地址
     require([
         'vs/editor/editor.main',
-    ], function (monaco,mlc) {
+    ], function (monaco, mlc) {
         console.log(mlc ?? undefined)
         editor = monaco.editor.create(editorContainer, {
             value: [getDemoCode()].join('\n'),
@@ -448,7 +448,12 @@ function saveEditorFile(flushEditorContent) {
 
 //编译当前文件函数
 function compileCurrentCode(resultWindowTerm) {
-    var eventSource = new EventSource(`${window.baseUrl}/compile/sse?code=${encodeURIComponent(getCode())}`, {
+    let config = editor.getModel().config;
+    if (!config) {
+        // alert('请选择文件');
+        return;
+    }
+    var eventSource = new EventSource(`${window.baseUrl}/compile/sse?ProjectResourceId=${encodeURIComponent(config.id)}`, {
         headers: {'Content-Type': 'application/x-www-form-urlencoded'}
     });
     $('#compileSseBtn').prop("disabled", true);

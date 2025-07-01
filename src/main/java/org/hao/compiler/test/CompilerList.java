@@ -1,0 +1,59 @@
+package org.hao.compiler.test;
+
+import cn.hutool.core.util.StrUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.hao.core.Lists;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * TODO
+ *
+ * @author wanghao(helloworlwh @ 163.com)
+ * @since 2025/7/1 10:00
+ */
+@Slf4j
+public class CompilerList {
+    public void init(){
+        String template = "{}_PV"; //位号赋值
+        List<String> list = Lists.asList(
+                "RL.FCS0111.TI-1081901", "RL.FCS0111.TI-1081902", "RL.FCS0111.TI-1081903", "RL.FCS0111.TI-1081904","RL.FCS0111.TI-1081905","RL.FCS0111.TI-1081906",                   //1#炉
+                "RL.FCS0111.TI-1082006","RL.FCS0111.TI-1082005","RL.FCS0111.TI-1082004","RL.FCS0111.TI-1082003","RL.FCS0111.TI-1082002","RL.FCS0111.TI-1082001",
+
+
+                "RL.FCS0110.AI-11501A", "RL.FCS0110.AT11501A", "RL.FCS0110.TI-11501A", "RL.FCS0110.TICSA-11502A","RL.FCS0110.TE11503A","RL.FCS0110.TV11501A-AI",
+                "RL.FCS0110.FT11506A","RL.FCS0110.PT11501A","RL.FCS0110.PI-11502A",                              //1#炉
+                "RL.FCS0110.AI-11501B", "RL.FCS0110.AT11501B", "RL.FCS0110.TI-11501B", "RL.FCS0110.TICSA-11502B","RL.FCS0110.TE11503B","RL.FCS0110.TV11501B-AI",
+                "RL.FCS0110.FT11506B","RL.FCS0110.PT11501B","RL.FCS0110.PI-11502B",
+
+                "RL.FCS0111.PI-10818B", "RL.FCS0111.TI-10818B", "RL.FCS0111.FIQ-10818B", "RL.FCS0111.FIQ-10819B","RL.FCS0111.FIQ-10820B","RL.FCS0111.PI-11502B",
+                "RL.FCS0111.PT11502B","RL.FCS0111.PT11503B","RL.FCS0111.SE115112B","RL.FCS0111.FI-10824",                               //2#炉
+                "RL.FCS0111.PI-10818A", "RL.FCS0111.TI-10818A", "RL.FCS0111.FIQ-10818A", "RL.FCS0111.FIQ-10819A","RL.FCS0111.FIQ-10820A","RL.FCS0111.PI-11502A",
+                "RL.FCS0111.PT11502A","RL.FCS0111.PT11503A","RL.FCS0111.SE115112A","RL.FCS0111.FI-10826",
+
+                "LS.FCS0120.HJWP-AI9", "LS.FCS0120.HJWP-AI11", "LS.FCS0120.HJWP-AI13",
+
+                "RL.FCS0111.FI-10827"//1#进水流量
+                , "RL.FCS0111.FI-10825"//2#进水流量
+                ,"RL.FCS0111.TI-1081907", "RL.FCS0111.TI-1081908","RL.FCS0111.TI-1081909","RL.FCS0111.TI-1081910","RL.FCS0111.TI-1081911","RL.FCS0111.TI-1081912","RL.FCS0111.TI-1081913"
+                , "RL.FCS0111.TI-1081914","RL.FCS0111.TI-1081915","RL.FCS0111.TI-1081916","RL.FCS0111.TI-1081917","RL.FCS0111.TI-1081918","RL.FCS0111.TI-1081919"
+                , "RL.FCS0111.TI-1081920","RL.FCS0111.TI-1081921","RL.FCS0111.TI-1081922","RL.FCS0111.TI-1081923","RL.FCS0111.TI-1081924","RL.FCS0111.TI-1081925"
+                , "RL.FCS0111.TI-1081926","RL.FCS0111.TI-1081927","RL.FCS0111.TI-1081928","RL.FCS0111.TI-1081929","RL.FCS0111.TI-1081930","RL.FCS0111.TI-1081931"
+                , "RL.FCS0111.TI-1081932","RL.FCS0111.TI-1081933","RL.FCS0111.TI-1081934","RL.FCS0111.TI-1081935","RL.FCS0111.TI-1081936","RL.FCS0111.TI-1081937"
+                , "RL.FCS0111.TI-1081938"
+                ,"RL.FCS0111.XYRS1FT201","RL.FCS0111.XYRS1PT201","RL.FCS0111.XYRS1FT602","RL.FCS0111.XYRS1FT601","RL.FCS0111.XYRS1PT601"         //1#阳极炉稀氧烧嘴
+                ,"RL.FCS0111.XYRS2FT201","RL.FCS0111.XYRS2PT201","RL.FCS0111.XYRS2FT601","RL.FCS0111.XYRS2FT602","RL.FCS0111.XYRS2PT601",
+
+                "RL.FCS0112.FI-10811E-R", "RL.FCS0112.FI-10811F-R",
+
+                "RL.FCS0111.PIC-10822","RL.FCS0111.FI-10811A-R","RL.FCS0111.PI-10823","RL.FCS0111.FI-10811B-R","RL.FCS0111.PIC-10821"
+                ,"RL.FCS0111.FI-10811C-R","RL.FCS0111.FI-10811D-R"
+        );
+        list = list.stream().distinct().collect(Collectors.toList());
+        log.info("tagNamesSize: {}", list.size());
+        List<String> tagNames = list.stream().map(item -> StrUtil.format(template, item)).collect(Collectors.toList());
+        log.info("tagNames: {}", tagNames.stream().collect(Collectors.joining(";")));
+
+    }
+}
