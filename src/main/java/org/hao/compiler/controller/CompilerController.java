@@ -1,5 +1,6 @@
 package org.hao.compiler.controller;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -48,7 +49,9 @@ public class CompilerController {
         ModelAndView modelAndView = new ModelAndView("editor");
         modelAndView.addObject("title", "在线 Java 编译器");
         modelAndView.addObject("domainUrl", IPUtils.getBaseUrl());
+        Project projectById = projectService.getProjectById(Convert.toLong(projectId));
         modelAndView.addObject("projectId", projectId);
+        modelAndView.addObject("project", projectById);
         modelAndView.addObject("wsUrl", IPUtils.getBaseUrl().replace("http://", "ws://"));
         return modelAndView;
     }
@@ -60,7 +63,7 @@ public class CompilerController {
         SseEmitter emitter = new SseEmitter();
         new Thread(() -> {
             try {
-                if (StrUtil.isEmpty(ProjectResourceId)){
+                if (StrUtil.isEmpty(ProjectResourceId)) {
                     SseUtil.sendMegBase64(emitter, "文件id为空,请选择代码文件\r\n");
                     return;
                 }

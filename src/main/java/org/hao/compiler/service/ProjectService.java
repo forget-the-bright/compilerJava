@@ -52,13 +52,39 @@ public class ProjectService {
 
     //region 项目相关
     // 创建项目
+    @SneakyThrows
     public Project createProject(String name, String mainClass, String creator) {
+        if (StrUtil.isEmpty(mainClass)) {
+            throw new RuntimeException("请输入主类");
+        }
         Project project = new Project();
         project.setName(name);
         project.setMainClass(mainClass);
         project.setCreateTime(new Date());
         project.setCreator(creator);
         Db.save(project);
+        List<String> split = StrUtil.split(mainClass, ".");
+        ProjectResource projectResource = null;
+        String packageName = split.size() > 1 ? split.subList(0, split.size() - 1).stream().collect(Collectors.joining(".")) : "";
+        for (int i = 1; i <= split.size(); i++) {
+            String fileName = split.get(i - 1);
+            if (i == split.size()) {
+                Template template = freeMarkerConfig.getTemplate("java_main_template.ftl");
+                // 使用 StringWriter 接收渲染后的结果
+                StringWriter stringWriter = new StringWriter();
+                Map<String, Object> data = new HashMap<>();
+                data.put("packageName", packageName.equals("") ? "" : "package " + packageName + ";");
+                data.put("className", fileName);
+                template.process(data, stringWriter);
+                String content = stringWriter.toString();
+                projectResource = ProjectResource.ofFile(fileName, content, project.getId(), (null == projectResource ? 0 : projectResource.getId()));
+                Db.save(projectResource);
+                project.setMainClassId(projectResource.getId() + "");
+                project.updateById();
+            } else {
+                projectResource = addDirectory(project.getId(), fileName, (null == projectResource ? 0 : projectResource.getId()));
+            }
+        }
         return project;
         //return projectRepo.save(project);
     }
@@ -106,7 +132,8 @@ public class ProjectService {
     }
 
     // 添加文件
-    public ProjectResource addFile(Long projectId, String fileName, String content, Long parentId) throws IOException, TemplateException {
+    @SneakyThrows
+    public ProjectResource addFile(Long projectId, String fileName, String content, Long parentId) {
 
 
         List<ProjectResource> resources = resourceMapper.findByProjectIdWithoutContent(projectId);
@@ -258,6 +285,8 @@ public class ProjectService {
 
         return rootNodes;
     }
+
+
     //endregion
 
     //region 实体类,工具方法
@@ -297,6 +326,7 @@ public class ProjectService {
         }
         return packageName;
     }
+
     // 替换源代码中的包名
     public String replacePackage(String codeInfo, String newPackageName) {
         if (StrUtil.isEmpty(codeInfo)) return codeInfo;
@@ -336,7 +366,8 @@ public class ProjectService {
         // 写回文件
         return updatedContent;
     }
-      // 通过源码获取类名
+
+    // 通过源码获取类名
     public String getClassNameByCode(String code) {
         try {
             CompilationUnit parse = StaticJavaParser.parse(code);

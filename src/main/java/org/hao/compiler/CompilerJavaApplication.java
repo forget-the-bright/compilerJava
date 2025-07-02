@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class CompilerJavaApplication {
     public static void main(String[] args) {
+
         // 启动控制台输出捕获
         ConsoleCapture.startCapture();
         SpringRunUtil.runAfter(CompilerJavaApplication.class, args);

@@ -20,6 +20,7 @@
         window.baseUrl = "${domainUrl}";
         window.wsUrl = "${wsUrl}";
         window.projectId = "${projectId}";
+        window.mainClassId = "${project.mainClassId}";
     </script>
 </head>
 <body>
@@ -66,7 +67,6 @@
     import {Terminal} from 'https://esm.sh/xterm@latest'
     import {FitAddon} from 'https://esm.sh/xterm-addon-fit@latest';
     import {WebLinksAddon} from 'https://esm.sh/xterm-addon-web-links@latest';
-    import { AttachAddon } from 'https://esm.sh/xterm-addon-attach@latest'
 
 
     function getTermAndFitAddon(scrollback, document) {
@@ -82,12 +82,13 @@
             }
         });
         let fitAddon = new FitAddon();
+        let webLinksAddon =  new WebLinksAddon();
+        console.log(webLinksAddon)
         term.loadAddon(fitAddon);
+        // 加载并启用 WebLinksAddon，这允许识别和点击网页链接
+        term.loadAddon(webLinksAddon);
         term.open(document);
         fitAddon.fit();
-        // 加载并启用 WebLinksAddon，这允许识别和点击网页链接
-        term.loadAddon(new WebLinksAddon());
-         //term.loadAddon(new AttachAddon());
         return {term, fitAddon};
     }
 
@@ -101,7 +102,7 @@
         resizeTimeout = setTimeout(() => {
             logWindowFitAddon.fit();
             resultWindowFitAddon.fit();
-        }, 200); // 延迟确保 DOM 已更新 // 只有最后一次会执行
+        }, 100); // 延迟确保 DOM 已更新 // 只有最后一次会执行
     });
 
     // 将 SSE 日志写入终端

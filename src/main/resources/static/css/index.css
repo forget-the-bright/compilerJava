@@ -54,7 +54,7 @@ body {
     background-color: white;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    width: 200px;
+    width: 350px;
     /* Fixed width for each card */
     min-height: 100px;
     display: flex;

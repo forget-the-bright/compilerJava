@@ -127,7 +127,7 @@ GoldenComponentMap.set('editor', function (container, state) {
             fontSize: 16,
             automaticLayout: true
         });
-        let fileId = 5;
+        let fileId = window.mainClassId;
         // 填充文件内容
         fillEditorFileContent(fileId);
         // 填充命令
@@ -492,6 +492,9 @@ function fillEditorFileContent(ProjectResourceId) {
     fetch(`${window.baseUrl}/projects/${ProjectResourceId}/file`)
         .then(response => response.json())
         .then(data => {
+            if (!data){
+                return;
+            }
             editor.getModel().config = data;
             editor.getModel().setValue(data.content);
         })

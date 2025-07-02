@@ -29,7 +29,7 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Project extends Model<Project> {
-//    @Id
+    //    @Id
 //    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @TableId(value = "ID", type = IdType.AUTO)
     private Long id;
@@ -43,6 +43,12 @@ public class Project extends Model<Project> {
 
     @TableField(value = "MAIN_CLASS")
     private String mainClass;
+
+    @TableField(value = "MAIN_CLASS_ID")
+    private String mainClassId;
+
+    @TableField(value = "description")
+    private String description;
 
     @TableField(value = "CREATOR")
     private String creator;

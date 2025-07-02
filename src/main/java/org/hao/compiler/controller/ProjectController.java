@@ -31,7 +31,7 @@ public class ProjectController {
 
     //region 项目管理
 
-    @ApiOperationSupport(order = 1, author = "wanghao")
+    @ApiOperationSupport(order = 0, author = "wanghao")
     @Operation(summary = "创建项目")
     @PostMapping
     @LogDefine(value = "创建项目")
@@ -39,21 +39,28 @@ public class ProjectController {
         return projectService.createProject(dto.getName(), dto.getMainClass(), dto.getCreator());
     }
 
-    @ApiOperationSupport(order = 2, author = "wanghao")
+    @ApiOperationSupport(order = 1, author = "wanghao")
     @Operation(summary = "更新项目")
     @PostMapping("{projectId}/updateProject")
     @LogDefine(value = "更新项目")
-
     public Project updateProject(@PathVariable Long projectId, @RequestBody CreateProjectDTO dto) {
         return projectService.updateProject(projectId, dto);
     }
 
-    @ApiOperationSupport(order = 3, author = "wanghao")
+    @ApiOperationSupport(order = 2, author = "wanghao")
     @Operation(summary = "项目列表")
     @PostMapping("listProject")
     @LogDefine(value = "项目列表")
     public List<Project> listProject() {
         return projectService.getProjects();
+    }
+
+    @ApiOperationSupport(order = 3, author = "wanghao")
+    @Operation(summary = "获取项目详情")
+    @GetMapping("getProjectInfo")
+    @LogDefine(value = "获取项目详情")
+    public Project getProjectInfo(@RequestParam Long projectId) {
+        return projectService.getProjectById(projectId);
     }
 
     @ApiOperationSupport(order = 4, author = "wanghao")
@@ -95,7 +102,7 @@ public class ProjectController {
             @PathVariable Long projectId,
             @RequestParam String name,
             @RequestParam String content,
-            @RequestParam(required = false) Long parentId) throws TemplateException, IOException {
+            @RequestParam(required = false) Long parentId){
         return projectService.addFile(projectId, name, content, parentId);
     }
 
