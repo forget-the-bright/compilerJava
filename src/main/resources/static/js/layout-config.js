@@ -155,7 +155,7 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
     container.getElement().html('<div id="fileBrowser" style="width: 100%; height: 100%;"></div>');
     // 初始化 jsTree
     var fileBrowser = container.getElement().find('#fileBrowser');
-    let projectId = 1;
+    let projectId =window.projectId;
     fetch(`${window.baseUrl}/projects/${projectId}/tree`).then(response => response.text())
         .then(content => {
             let jstreeData = convertData(JSON.parse(content));
@@ -219,7 +219,7 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
                 "action": async function (data) {
                     // let inst = $.jstree.reference(data.reference)
                     let rdata =
-                        await fetch(`${window.baseUrl}/projects/1/dirs?name=${encodeURIComponent("temp")}&parentId=${node.id}`,
+                        await fetch(`${window.baseUrl}/projects/${window.projectId}/dirs?name=${encodeURIComponent("temp")}&parentId=${node.id}`,
                             {
                                 method: 'POST'
                             });
@@ -236,7 +236,7 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
                 'icon': 'fas fa-code',
                 "action": async function (data) {
                     let rdata =
-                        await fetch(`${window.baseUrl}/projects/1/files?name=${encodeURIComponent("temp.java")}&parentId=${node.id}&content=''`,
+                        await fetch(`${window.baseUrl}/projects/${window.projectId}/files?name=${encodeURIComponent("temp.java")}&parentId=${node.id}&content=''`,
                             {
                                 method: 'POST'
                             });
@@ -470,7 +470,7 @@ function compileCurrentCode(resultWindowTerm) {
 
 // 编译项目代码
 function compileProjectCode(resultWindowTerm) {
-    let projectId = 1;
+    let projectId = window.projectId;
     var eventSource = new EventSource(`${window.baseUrl}/compileProject/sse?projectId=${projectId}`, {
         headers: {'Content-Type': 'application/x-www-form-urlencoded'}
     });

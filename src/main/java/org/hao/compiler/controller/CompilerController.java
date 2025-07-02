@@ -44,10 +44,11 @@ public class CompilerController {
 
     @Operation(summary = "编辑器界面")
     @GetMapping("/editor")
-    public ModelAndView editor() {
+    public ModelAndView editor(@RequestParam String projectId) {
         ModelAndView modelAndView = new ModelAndView("editor");
         modelAndView.addObject("title", "在线 Java 编译器");
         modelAndView.addObject("domainUrl", IPUtils.getBaseUrl());
+        modelAndView.addObject("projectId", projectId);
         modelAndView.addObject("wsUrl", IPUtils.getBaseUrl().replace("http://", "ws://"));
         return modelAndView;
     }

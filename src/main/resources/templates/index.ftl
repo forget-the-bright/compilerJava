@@ -40,11 +40,11 @@
             </div>-->
 
             <div class="card">
-                <img src="..." class="card-img-top" alt="...">
+<#--                <img src="..." class="card-img-top" alt="...">-->
                 <div class="card-body">
-                    <h5 class="card-title">${project.name}</h5>
+                    <h5 class="card-title"> ${project.name} </h5>
                     <p class="card-text">这是一个简单的项目描述。项目入口类: ${project.mainClass}</p>
-                    <a href="#" class="btn btn-primary">Go somewhere</a>
+                    <a href="${domainUrl}/editor?projectId=${project.id}" class="btn btn-primary">进入项目</a>
                 </div>
             </div>
         </#list>

@@ -19,6 +19,7 @@
     <script>
         window.baseUrl = "${domainUrl}";
         window.wsUrl = "${wsUrl}";
+        window.projectId = "${projectId}";
     </script>
 </head>
 <body>
@@ -65,6 +66,8 @@
     import {Terminal} from 'https://esm.sh/xterm@latest'
     import {FitAddon} from 'https://esm.sh/xterm-addon-fit@latest';
     import {WebLinksAddon} from 'https://esm.sh/xterm-addon-web-links@latest';
+    import { AttachAddon } from 'https://esm.sh/xterm-addon-attach@latest'
+
 
     function getTermAndFitAddon(scrollback, document) {
         let term = new Terminal({
@@ -84,6 +87,7 @@
         fitAddon.fit();
         // 加载并启用 WebLinksAddon，这允许识别和点击网页链接
         term.loadAddon(new WebLinksAddon());
+         //term.loadAddon(new AttachAddon());
         return {term, fitAddon};
     }
 

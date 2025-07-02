@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 80
   servlet:
     context-path: /complier
 
@@ -69,3 +69,4 @@ knife4j:
 hao-util:
   enabled: true
   print-interface: false
+  enable-failsafe: true
