@@ -297,8 +297,11 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
             // 展开所有节点
             //$('#jstree').jstree('open_all');
             // 展开指定节点
-            //data.instance.open_node(1);     // 单个节点 （1 是顶层的id）
-            data.instance.open_node([1, 10]); // 多个节点 (展开多个几点只有在一次性装载后所有节点后才可行）
+             console.log('data', data)
+             console.log('data', data.instance._model.data['#'].children_d)
+            //data.instance.open_node('#');     // 单个节点 （1 是顶层的id）
+            //data.instance.open_node([1, 10]); // 多个节点 (展开多个几点只有在一次性装载后所有节点后才可行）
+            data.instance.open_node(data.instance._model.data['#'].children_d); // 展开所有节点
         });
         // 节点激活事件
         jstree.on('activate_node.jstree', function (e, data) {

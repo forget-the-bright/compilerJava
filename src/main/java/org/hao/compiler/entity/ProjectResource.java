@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -56,6 +57,7 @@ public class ProjectResource extends Model<ProjectResource> {
 
     //    @Transient
     @TableField(exist = false)
+    @JsonIgnore
     private List<ProjectResource> children;
 
     // 构造方法辅助创建目录或文件

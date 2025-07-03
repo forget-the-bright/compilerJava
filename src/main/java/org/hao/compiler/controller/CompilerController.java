@@ -1,6 +1,7 @@
 package org.hao.compiler.controller;
 
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -75,8 +76,14 @@ public class CompilerController {
                 SseEmitterWriter sseEmitterWriter = new SseEmitterWriter(emitter);
                 Class<?> compile = CompilerUtil.compileAndLoadClass(code, sseEmitterWriter);
                 SseUtil.sendMegBase64(emitter, "编译成功，开始执行...\r\n");
-                Object o = ReflectUtil.newInstance(compile);
-                ReflectUtil.invoke(o, "run");
+                Object obj = ReflectUtil.newInstance(compile);
+                Method run = ReflectUtil.getMethod(compile, "run");
+                Class<?>[] parameterTypes = new Class[]{String[].class};
+                Method main = ReflectUtil.getMethod(compile, "main", parameterTypes);
+                if (run == null || main == null) {
+                    sseEmitterWriter.write("当前类没有入口函数请添加静态main函数 或者 对象run方法\r\n");
+                }
+                ReflectUtil.invoke(obj, ObjectUtil.defaultIfNull(main, run));
                 SseUtil.sendMegBase64(emitter, "执行完毕！\r\n");
             } catch (Exception e) {
                 try {

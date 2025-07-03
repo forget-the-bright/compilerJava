@@ -1,5 +1,6 @@
 package org.hao.compiler.service;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
@@ -18,6 +19,8 @@ import org.hao.compiler.entity.Project;
 import org.hao.compiler.entity.ProjectResource;
 import org.hao.compiler.entity.ResourceType;
 import org.hao.compiler.mapper.ProjectResourceMapper;
+import org.hao.core.db.MPSqlUtil;
+import org.hao.vo.Tuple;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +36,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.googlejavaformat.java.Formatter;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * TODO
@@ -77,7 +81,7 @@ public class ProjectService {
                 data.put("className", fileName);
                 template.process(data, stringWriter);
                 String content = stringWriter.toString();
-                projectResource = ProjectResource.ofFile(fileName, content, project.getId(), (null == projectResource ? 0 : projectResource.getId()));
+                projectResource = ProjectResource.ofFile(fileName + ".java", content, project.getId(), (null == projectResource ? 0 : projectResource.getId()));
                 Db.save(projectResource);
                 project.setMainClassId(projectResource.getId() + "");
                 project.updateById();
@@ -92,17 +96,28 @@ public class ProjectService {
     public Project updateProject(Long projectId, CreateProjectDTO dto) {
         Project byId = Db.getById(projectId, Project.class);
         if (null == byId) return null;
+        String mainClass = dto.getMainClass();
+        if (!byId.getMainClass().equals(dto.getMainClass())) {
+            List<String> split = StrUtil.split(mainClass, ".");
+            ProjectResource projectResource = null;
+            for (int i = 1; i <= split.size(); i++) {
+                String fileName = split.get(i - 1);
+                if (i == split.size()) {
+                    projectResource = resourceMapper.getResourceByProjectIdAndParentIdAndName(projectId, (null == projectResource ? 0 : projectResource.getId()), fileName + ".java");
+                } else {
+                    projectResource = resourceMapper.getResourceByProjectIdAndParentIdAndName(projectId, (null == projectResource ? 0 : projectResource.getId()), fileName);
+                }
+                if (null == projectResource) {
+                    throw new RuntimeException("未找到文件");
+                }
+            }
+            byId.setMainClassId(projectResource.getId() + "");
+        }
         byId.setName(dto.getName());
         byId.setMainClass(dto.getMainClass());
         byId.setCreator(dto.getCreator());
         Db.updateById(byId);
         return byId;
-       /* return projectRepo.findById(projectId).map(project -> {
-            project.setName(dto.getName());
-            project.setMainClass(dto.getMainClass());
-            project.setCreator(dto.getCreator());
-            return projectRepo.save(project);
-        }).orElse(null);*/
     }
 
     public Project getProjectById(long projectId) {
@@ -170,24 +185,81 @@ public class ProjectService {
     }
 
     // 移动文件
+    @Transactional(rollbackFor = Exception.class)
     public ProjectResource moveFileName(Long projectResourceId, Long parentProjectResourceId) {
         ProjectResource projectResource = resourceMapper.selectById(projectResourceId);
-        //ProjectResource projectResource = resourceRepo.findById(projectResourceId).orElse(null);
+        // 判断子节点是否存在
         if (null == projectResource) return null;
+
         ProjectResource parentProjectResource = resourceMapper.selectById(parentProjectResourceId);
-        //ProjectResource parentProjectResource = resourceRepo.findById(parentProjectResourceId).orElse(null);
+        // 判断父节点是否是目录
         if (null != parentProjectResource && !parentProjectResource.getType().equals(ResourceType.DIRECTORY)) {
             return null;
         }
+        Project project = Db.getById(projectResource.getProjectId(), Project.class);
+        if (project == null) return null;
+        // 如果子节点是文件, 则替换包名
         if (projectResource.getType().equals(ResourceType.FILE)) {
             String packageName = getPackageName(projectResource.getProjectId(), parentProjectResourceId);
             String content = replacePackage(projectResource.getContent(), packageName);
+            if (project.getMainClassId().equals(projectResource.getId() + "")) {
+                String classNameByCode = getClassNameByCode(content);
+                project.setMainClass(packageName + "." + classNameByCode);
+                project.updateById();
+            }
             projectResource.setContent(content);
+        } else {
+            List<ProjectResource> list = resourceMapper.findByProjectId(projectResource.getProjectId());
+            ProjectResource findIdByProjectResource = list.stream().filter(r -> r.getId().equals(projectResource.getId())).findFirst().get();
+            List<ProjectResource> parentChildDataRecursively = MPSqlUtil.fillParentChildDataRecursively(list,
+                    ProjectResource::getId, ProjectResource::getParentId, ProjectResource::setChildren,
+                    projectResource.getId() + "");
+            findIdByProjectResource.setParentId(parentProjectResourceId);
+            findIdByProjectResource.setChildren(parentChildDataRecursively);
+            refreshPackageName(list, findIdByProjectResource, project);
+
         }
         projectResource.setParentId(parentProjectResourceId);
         resourceMapper.insertOrUpdate(projectResource);
         return projectResource;
-        //return resourceRepo.save(projectResource);
+    }
+
+    private void refreshPackageName(List<ProjectResource> list, ProjectResource findIdByProjectResource, Project project) {
+        List<ProjectResource> children = findIdByProjectResource.getChildren();
+        if (null == children) return;
+
+        ProjectResource rootResource = list.stream().filter(r -> r.getParentId() == 0L).findFirst().orElse(null);
+        if (null == rootResource) return;
+        Tuple<Function<Tuple<List<ProjectResource>, ProjectResource>, String>, String> functionObjectTuple = new Tuple<>();
+        Function<Tuple<List<ProjectResource>, ProjectResource>, String> func = (tuple) -> {
+            Function<Tuple<List<ProjectResource>, ProjectResource>, String> thisFunc = functionObjectTuple.getFirst();
+            List<ProjectResource> first = tuple.getFirst();
+            ProjectResource second = tuple.getSecond();
+            Long parentId = second.getParentId();
+            ProjectResource projectResource = first.stream().filter(r -> r.getId() == parentId).findFirst().orElse(null);
+            String packageName = "";
+            if (projectResource != null) {
+                packageName = thisFunc.apply(Tuple.newTuple(first, projectResource));
+            }
+            packageName = (StrUtil.isEmpty(packageName) ? "" : packageName + ".") + second.getName();
+            return packageName;
+        };
+        functionObjectTuple.setFirst(func);
+        String packageName = func.apply(Tuple.newTuple(list, findIdByProjectResource));
+        for (ProjectResource child : children) {
+            if (child.getType().equals(ResourceType.FILE)) {
+                String content = replacePackage(child.getContent(), packageName);
+                child.setContent(content);
+                resourceMapper.updateById(child);
+                if (project.getMainClassId().equals(child.getId() + "")) {
+                    String classNameByCode = getClassNameByCode(content);
+                    project.setMainClass(packageName + "." + classNameByCode);
+                    project.updateById();
+                }
+            } else {
+                refreshPackageName(list, child, project);
+            }
+        }
     }
 
     // 获取文件详情
@@ -203,6 +275,9 @@ public class ProjectService {
         ProjectResource byId = resourceMapper.selectById(projectResource.getId());
         // ProjectResource byId = resourceRepo.getById(projectResource.getId());
         if (byId == null) return byId;
+        if (projectResource.getType().equals(ResourceType.DIRECTORY)) {
+            projectResource.setContent("");
+        }
         if (StrUtil.isNotEmpty(projectResource.getContent())) {
             Formatter formatter = new Formatter(JavaFormatterOptions.defaultOptions());
             String formattedCode = formatter.formatSource(projectResource.getContent());
@@ -243,18 +318,20 @@ public class ProjectService {
     public ProjectResource removeProjectSourceById(Long projectResourceId) {
         ProjectResource byId = resourceMapper.selectById(projectResourceId);
         if (byId == null) return null;
+        Project project = Db.getById(byId.getProjectId(), Project.class);
+        if (project == null) return null;
+        if (project.getMainClassId().equals(Convert.toStr(projectResourceId))) {
+            throw new RuntimeException("项目主类不能删除！");
+        }
         byId.deleteById();
         return byId;
-/*        return resourceRepo.findById(projectResourceId).map(resource -> {
-            resourceRepo.delete(resource);
-            return resource;
-        }).orElse(null);*/
     }
 
     // 获取项目所有文件内容列表
     public List<String> getProjectSourceContentsByProjectId(long projectId) {
         List<String> contents = resourceMapper.selectObjs(Wrappers.lambdaQuery(ProjectResource.class)
                 .select(ProjectResource::getContent)
+                .eq(ProjectResource::getType, ResourceType.FILE)
                 .eq(ProjectResource::getProjectId, projectId));
         //List<String> contents = jdbcTemplate.queryForList(StrUtil.format("SELECT content FROM project_resource WHERE project_id ={}", projectId), String.class);
         return contents;
@@ -284,6 +361,13 @@ public class ProjectService {
         });
 
         return rootNodes;
+    }
+
+    public Project deleteProject(Long projectId) {
+        Project project = getProjectById(projectId);
+        project.deleteById();
+        resourceMapper.delete(Wrappers.lambdaQuery(ProjectResource.class).eq(ProjectResource::getProjectId, projectId));
+        return project;
     }
 
 

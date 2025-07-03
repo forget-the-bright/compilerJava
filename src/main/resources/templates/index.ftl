@@ -42,7 +42,7 @@
                            onclick="enterProject(${project.id})" value="进入项目"/>
                     <input type="button" class="btn btn-primary d-inline" data-bs-toggle="modal"
                            onclick="editOrCreateProject(${project.id})" value="修改项目"/>
-                    <input type="button" class="btn btn-danger d-inline" value="删除项目"/>
+                    <input type="button" class="btn btn-danger d-inline" onclick="deleteProject(${project.id})" value="删除项目"/>
                 </div>
             </div>
         </#list>
@@ -109,17 +109,26 @@
         const projectCountSpan = document.getElementById('projectCount');
         var myModal = new bootstrap.Modal(document.getElementById('exampleModal'), options)
 
-        function createProject() {
-            const projectName = `项目 ${projects.length + 1}`;
-            projects.push(projectName);
-            renderProjects();
-        }
-
-        function deleteProject() {
-            if (projects.length > 0) {
-                projects.pop();
-                renderProjects();
+        function deleteProject(projectId) {
+            if (!projectId){
+                return;
             }
+            if (projectId == 1){
+                alert("默认项目不能删除");
+                return;
+            }
+            $.ajax({
+                url: `${window.baseUrl}/projects/${projectId}/deleteProject`,
+                method: 'DELETE',
+                success: function (response) {
+                    console.log('成功:', response);
+                    window.location.reload(true); // 强制从服务器重新加载（忽略缓存）
+                },
+                error: function (error) {
+                    console.error('错误:', error);
+                    window.location.reload(true); // 强制从服务器重新加载（忽略缓存）
+                }
+            });
         }
 
         function enterProject(projectId) {
@@ -148,7 +157,6 @@
                             alert("项目不存在")
                             throw new Error("项目不存在");
                         }
-
                         id.val(response.id);
                         name.val(response.name);
                         mainClass.val(response.mainClass);
@@ -182,20 +190,6 @@
         }
 
 
-        function renderProjects() {
-            projectContainer.innerHTML = '';
-            projects.forEach((project, index) => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <h3>${project}</h3>
-                    <p>这是一个简单的项目描述。</p>
-                `;
-                projectContainer.appendChild(card);
-            });
-            projectCountSpan.textContent = projects.length;
-        }
-
 
         $('#dataForm').on('submit', function (event) {
             event.preventDefault(); // 阻止默认提交行为
@@ -208,9 +202,12 @@
                 data: JSON.stringify(serializeToObject(this)), // 将 JavaScript 对象转换为 JSON 字符串作为 body 数据
                 success: function (response) {
                     console.log('成功:', response);
+                    myModal.hide();
+                    window.location.reload(true);
                 },
                 error: function (error) {
                     console.error('错误:', error);
+                    window.location.reload(true);
                 }
             });
         });
@@ -223,6 +220,7 @@
             }
             return obj;
         }
+
         //window.addEventListener('resize', renderProjects);
     </script>
 </#noparse>

@@ -23,5 +23,20 @@ public interface ProjectResourceMapper extends BaseMapper<ProjectResource> {
         return resources;
     }
 
-    ;
+    default ProjectResource getResourceByProjectIdAndParentIdAndName(Long projectId, long l, String fileName){
+        return selectOne(Wrappers
+                .lambdaQuery(ProjectResource.class)
+                .eq(ProjectResource::getProjectId, projectId)
+                .eq(ProjectResource::getParentId, l)
+                .eq(ProjectResource::getName, fileName)
+                .last("limit 1"));
+    };
+
+    default List<ProjectResource> findByProjectId(Long projectId){
+        return selectList(Wrappers
+                .lambdaQuery(ProjectResource.class)
+                .eq(ProjectResource::getProjectId, projectId));
+    };
+
+
 }
