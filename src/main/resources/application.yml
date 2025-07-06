@@ -17,20 +17,36 @@ spring:
   web:
     resources:
       static-locations: classpath:/static/
+#  datasource:
+#    url: jdbc:h2:file:~/compilerJava/db/test;DB_CLOSE_DELAY=-1;MODE=MySQL
+#    username: sa
+#    password:
+#    driver-class-name: org.h2.Driver
   datasource:
-    url: jdbc:h2:file:~/compilerJava/db/test;DB_CLOSE_DELAY=-1;MODE=MySQL
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
+    dynamic:
+      primary: master #设置默认的数据源或者数据源组,默认值即为master
+      strict: false #严格匹配数据源,默认false. true未匹配到指定数据源时抛异常,false使用默认数据源
+      datasource:
+#        master:
+#          url: jdbc:h2:file:~/compilerJava/db/test;DB_CLOSE_DELAY=-1;MODE=MySQL
+#          username: sa
+#          password:
+#          driver-class-name: org.h2.Driver
+        master:
+          url: jdbc:mysql://192.168.3.199:3306/compiler_java?useSSL=false&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+          username: root
+          password: ks125930.
+          driver-class-name: com.mysql.cj.jdbc.Driver
+
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: false # 是否打印 SQL
     database-platform: org.hibernate.dialect.H2Dialect
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+#  h2:
+#    console:
+#      enabled: true
+#      path: /h2-console
 mybatis-plus:
   mapper-locations: classpath*:**/mapper/xml/*.xml  # Mapper XML 文件位置
   configuration:
