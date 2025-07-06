@@ -3,6 +3,7 @@ body {
     padding: 0;
     overflow: hidden;
 }
+
 .toolbar {
     height: 40px;
     background: #f3f3f3;
@@ -11,6 +12,7 @@ body {
     display: flex;
     align-items: center;
 }
+
 #layout-container {
     position: absolute;
     top: 40px;
@@ -18,6 +20,7 @@ body {
     right: 0;
     bottom: 0;
 }
+
 .log-content {
     background: #222;
     color: #eee;
@@ -27,6 +30,7 @@ body {
     overflow: auto;
     margin: 0;
 }
+
 .toolbar button {
     padding: 6px 12px;
     margin-right: 10px;
@@ -36,18 +40,32 @@ body {
     border-radius: 4px;
     cursor: pointer;
 }
+
 .toolbar button:disabled {
-    background: #cccccc;        /* 灰色背景 */
-    color: black;             /* 深灰色文字 */
-    cursor: not-allowed;        /* 禁止鼠标手势 */
-    opacity: 0.6;               /* 可选：降低透明度 */
-    border-color: #bbbbbb;      /* 可选：调整边框颜色 */
+    background: #cccccc; /* 灰色背景 */
+    color: black; /* 深灰色文字 */
+    cursor: not-allowed; /* 禁止鼠标手势 */
+    opacity: 0.6; /* 可选：降低透明度 */
+    border-color: #bbbbbb; /* 可选：调整边框颜色 */
 }
+
 .toolbar button:hover {
     background: #0056b3;
 }
+
 .monaco-editor-container {
     width: 100%;
     height: 100%;
     overflow: hidden;
+}
+
+.xterm,
+.xterm-screen,
+.xterm-rows {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+}
+
+.xterm-selection {
+    background-color: rgba(0, 120, 255, 0.3) !important;
 }

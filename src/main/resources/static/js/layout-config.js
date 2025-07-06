@@ -113,13 +113,17 @@ const GoldenComponentMap = new Map();
 GoldenComponentMap.set('editor', function (container, state) {
     container.getElement().html('<div class="monaco-editor-container" id="editor"></div>');
     let editorContainer = container.getElement().find('.monaco-editor-container')[0];
-    require.config({paths: {'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@latest/min/vs'}});
+    require.config({
+        paths: {
+            'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@latest/min/vs',
+        }
+    });
     // 创建 WebSocket 实例
     //const webSocket = new WebSocket(`${window.wsUrl}/lsp`); // 替换为你的WebSocket地址
     require([
-        'vs/editor/editor.main',
-    ], function (monaco, mlc) {
-        console.log(mlc ?? undefined)
+        'vs/editor/editor.main'
+    ], function (monaco) {
+
         editor = monaco.editor.create(editorContainer, {
             value: [getDemoCode()].join('\n'),
             language: 'java',
@@ -155,7 +159,7 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
     container.getElement().html('<div id="fileBrowser" style="width: 100%; height: 100%;"></div>');
     // 初始化 jsTree
     var fileBrowser = container.getElement().find('#fileBrowser');
-    let projectId =window.projectId;
+    let projectId = window.projectId;
     fetch(`${window.baseUrl}/projects/${projectId}/tree`).then(response => response.text())
         .then(content => {
             let jstreeData = convertData(JSON.parse(content));
@@ -297,8 +301,8 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
             // 展开所有节点
             //$('#jstree').jstree('open_all');
             // 展开指定节点
-             console.log('data', data)
-             console.log('data', data.instance._model.data['#'].children_d)
+            //  console.log('data', data)
+            //  console.log('data', data.instance._model.data['#'].children_d)
             //data.instance.open_node('#');     // 单个节点 （1 是顶层的id）
             //data.instance.open_node([1, 10]); // 多个节点 (展开多个几点只有在一次性装载后所有节点后才可行）
             data.instance.open_node(data.instance._model.data['#'].children_d); // 展开所有节点
@@ -495,7 +499,7 @@ function fillEditorFileContent(ProjectResourceId) {
     fetch(`${window.baseUrl}/projects/${ProjectResourceId}/file`)
         .then(response => response.json())
         .then(data => {
-            if (!data){
+            if (!data) {
                 return;
             }
             editor.getModel().config = data;

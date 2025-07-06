@@ -10,7 +10,7 @@
     <link type="text/css" rel="stylesheet"
           href="https://golden-layout.com/files/latest/css/goldenlayout-light-theme.css"/>
     <!-- xterm.js -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css">
+    <link rel="stylesheet" href="https://esm.sh/xterm/css/xterm.css">
     <!-- jstree -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
@@ -34,6 +34,7 @@
 
 
 <!-- jsTree 脚本 -->
+<#--<script src="${domainUrl}/js/xterm-addon-clipboard.js"></script>-->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/jstree.min.js"></script>
 <script src="https://golden-layout.com/files/latest/js/goldenlayout.min.js"></script>
@@ -60,6 +61,7 @@
         }
     });
 </script>
+
 <script type="module">
     // 初始化布局
     layout.init();
@@ -76,17 +78,19 @@
             convertEol: true,     // 自动将 \n 转换为换行（可选）
             scrollback: scrollback,  // 可选：设置滚动历史缓冲区大小
             wrap: true,         // 关键：启用自动换行
-            theme: {
+            theme: { //https://xtermjs.org/docs/api/terminal/interfaces/itheme/ 主题配置文档
                 background: '#ffffff',
-                foreground: '#000000'
+                foreground: '#000000',
+                selectionBackground: 'rgba(0,120,255, 0.4)', // 蓝色 + 30% 透明度',
             }
         });
         let fitAddon = new FitAddon();
-        let webLinksAddon =  new WebLinksAddon();
-        console.log(webLinksAddon)
+        let webLinksAddon = new WebLinksAddon();
+        // let clipboardAddon = new ClipboardAddon.ClipboardAddon();
         term.loadAddon(fitAddon);
         // 加载并启用 WebLinksAddon，这允许识别和点击网页链接
         term.loadAddon(webLinksAddon);
+        // term.loadAddon(clipboardAddon);
         term.open(document);
         fitAddon.fit();
         return {term, fitAddon};
@@ -94,6 +98,7 @@
 
     const {term: logWindowTerm, fitAddon: logWindowFitAddon} = getTermAndFitAddon(10000, $('#logWindow')[0]);
     const {term: resultWindowTerm, fitAddon: resultWindowFitAddon} = getTermAndFitAddon(10000, $('#result')[0]);
+    // console.log("terminal.options.theme:", resultWindowTerm.options.theme)
 
     let resizeTimeout;
     // 同时监听 Golden Layout 的更新事件
@@ -126,5 +131,8 @@
     });
 
 </script>
+
+</body>
+</html>
 </body>
 </html>
