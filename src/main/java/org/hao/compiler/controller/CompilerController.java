@@ -70,24 +70,23 @@ public class CompilerController {
                 }
                 String code = projectService.getProjectSourceById(Long.parseLong(ProjectResourceId)).getContent();
                 if (StrUtil.isEmpty(code)) {
-                    SseUtil.sendMegBase64(emitter, "代码不能为空，请输入代码！\r\n");
+                    SseUtil.sendMegBase64(emitter, "代码不能为空,请输入代码！\r\n");
                     return;
                 }
                 SseEmitterWriter sseEmitterWriter = new SseEmitterWriter(emitter);
                 Class<?> compile = CompilerUtil.compileAndLoadClass(code, sseEmitterWriter);
-                SseUtil.sendMegBase64(emitter, "编译成功，开始执行...\r\n");
-                Object obj = ReflectUtil.newInstance(compile);
+                SseUtil.sendMegBase64(emitter, "编译成功,开始执行...\r\n");
                 Method run = ReflectUtil.getMethod(compile, "run");
-                Class<?>[] parameterTypes = new Class[]{String[].class};
-                Method main = ReflectUtil.getMethod(compile, "main", parameterTypes);
-                if (run == null || main == null) {
+                Method main = ReflectUtil.getMethod(compile, "main", new Class[]{String[].class});
+                if (run == null && main == null) {
                     sseEmitterWriter.write("当前类没有入口函数请添加静态main函数 或者 对象run方法\r\n");
                 }
+                Object obj = ReflectUtil.newInstance(compile);
                 ReflectUtil.invoke(obj, ObjectUtil.defaultIfNull(main, run));
                 SseUtil.sendMegBase64(emitter, "执行完毕！\r\n");
             } catch (Exception e) {
                 try {
-                    emitter.send("编译异常：" + e.getMessage());
+                    SseUtil.sendMegBase64(emitter, "编译异常：" + e.getMessage());
                 } catch (IOException ignored) {
                 }
                 e.printStackTrace();
@@ -106,7 +105,7 @@ public class CompilerController {
         new Thread(() -> {
             try {
                 if (StrUtil.isEmpty(projectId)) {
-                    SseUtil.sendMegBase64(emitter, "代码不能为空，请输入代码！");
+                    SseUtil.sendMegBase64(emitter, "代码不能为空,请输入代码！");
                     return;
                 }
                 Project projectById = projectService.getProjectById(Long.parseLong(projectId));
@@ -124,7 +123,7 @@ public class CompilerController {
                         Thread.currentThread().getContextClassLoader(),
                         sseEmitterWriter,
                         contents.stream().filter(code -> StrUtil.isNotEmpty(code)).toArray(String[]::new));
-                SseUtil.sendMegBase64(emitter, "编译成功，开始执行...\r\n");
+                SseUtil.sendMegBase64(emitter, "编译成功,开始执行...\r\n");
                 Class<?> aClass = inMemoryClassLoader.loadClass(projectById.getMainClass());
                 // 定义方法名及参数类型
                 String methodName = "main";

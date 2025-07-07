@@ -21,7 +21,7 @@ public class SseEmitterWriter extends Writer {
     @Override
     public void write(char[] cbuf, int off, int len) throws IOException {
         String message = new String(cbuf, off, len);
-        emitter.send(message);
+        SseUtil.sendMegBase64(emitter, message);
     }
 
     @Override
