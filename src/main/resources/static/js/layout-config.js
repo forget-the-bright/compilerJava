@@ -422,7 +422,7 @@ function base64ToUtf8(base64) {
 //region 后端交互方法
 
 //保存文件函数
-function saveEditorFile(flushEditorContent) {
+function saveEditorFile(flushEditorContent,func) {
     let config = editor.getModel().config;
     if (!config) {
         // alert('请选择文件');
@@ -445,6 +445,7 @@ function saveEditorFile(flushEditorContent) {
         return response.json(); // 解析 JSON 格式的响应
     }).then(data => {
         console.log(data)
+        if (func) func();
         if (flushEditorContent) {
             editor.getModel().config = data;
             editor.getModel().setValue(data.content);
@@ -477,21 +478,23 @@ function compileCurrentCode(resultWindowTerm) {
 
 // 编译项目代码
 function compileProjectCode(resultWindowTerm) {
-    let projectId = window.projectId;
-    var eventSource = new EventSource(`${window.baseUrl}/compileProject/sse?projectId=${projectId}`, {
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+    saveEditorFile(true,()=>{
+        let projectId = window.projectId;
+        var eventSource = new EventSource(`${window.baseUrl}/compileProject/sse?projectId=${projectId}`, {
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+        });
+        $('#compileProjectSseBtn').prop("disabled", true);
+        eventSource.onmessage = function (e) {
+            let message = e.data;
+            message = base64ToUtf8(message);
+            resultWindowTerm.write(message);
+        };
+        eventSource.onerror = function () {
+            eventSource.close();
+            console.log('compileProject eventSource is error close ');
+            $('#compileProjectSseBtn').prop("disabled", false);
+        };
     });
-    $('#compileProjectSseBtn').prop("disabled", true);
-    eventSource.onmessage = function (e) {
-        let message = e.data;
-        message = base64ToUtf8(message);
-        resultWindowTerm.write(message);
-    };
-    eventSource.onerror = function () {
-        eventSource.close();
-        console.log('compileProject eventSource is error close ');
-        $('#compileProjectSseBtn').prop("disabled", false);
-    };
 }
 
 // 填充编辑器文件内容,根据选择的文件id

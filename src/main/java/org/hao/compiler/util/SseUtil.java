@@ -16,6 +16,11 @@ import java.nio.charset.Charset;
 @Slf4j
 public class SseUtil {
 
+    public static void sendMegBase64Ln(SseEmitter emitter, String msg) throws IOException {
+        if (emitter == null) return;
+        String encodeMsg = Base64.encode(msg + "\r\n", Charset.forName("UTF-8"));
+        emitter.send(encodeMsg);
+    }
     public static void sendMegBase64(SseEmitter emitter, String msg) throws IOException {
         if (emitter == null) return;
         String encodeMsg = Base64.encode(msg, Charset.forName("UTF-8"));

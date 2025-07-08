@@ -56,9 +56,9 @@ public class AppRunAfterConfig implements CommandLineRunner {
             String second = LogDefineConfig.formatterSecond.format(intervalMs);
             boolean flag = ObjectUtil.isNotEmpty(error);
             if (flag) {
-                logger.error(PrintUtil.RED.getColorStr("错误信息: " + error.getMessage()), error);
+                logger.error(PrintUtil.RED.getColorStr("错误信息: {}", error.getMessage()), error);
             }
-            logger.info(PrintUtil.RED.getColorStr(StrUtil.format("{}类的方法: {} 执行时间： {} 小时,{} 分钟,{} 秒,共 {} 毫秒 \r\n", className, methodName, hour, minute, second, intervalMs)));
+            logger.info(PrintUtil.RED.getColorStr("{}类的方法: {} 执行时间： {} 小时,{} 分钟,{} 秒,共 {} 毫秒 \r\n", className, methodName, hour, minute, second, intervalMs));
             return null;
         });
     }

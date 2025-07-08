@@ -51,6 +51,10 @@ public class ProjectService {
     private final Configuration freeMarkerConfig;
     private final JdbcTemplate jdbcTemplate;
     private final ProjectResourceMapper resourceMapper;
+    private final  Formatter formatter = new Formatter(
+            JavaFormatterOptions.builder()
+                    .style(JavaFormatterOptions.Style.AOSP)
+                    .build());
 
     /**
      * 创建一个项目并生成与之相关的资源文件。
@@ -322,7 +326,7 @@ public class ProjectService {
      * @param projectResourceId       要移动的文件或目录的ID。
      * @param parentProjectResourceId 目标父目录的ID。如果为null，则表示移动到根目录。
      * @return 返回移动后的文件或目录对象（ProjectResource）。如果移动失败，则返回null。
-     *
+     * <p>
      * 该方法的主要功能包括：
      * 1. 检查目标文件或目录是否存在；
      * 2. 验证目标父目录是否为合法的目录类型；
@@ -399,9 +403,9 @@ public class ProjectService {
      * 此方法递归地更新项目资源及其子资源的包名，特别关注文件类型的资源
      * 对于文件类型的资源，它还会更新项目的主要类名（如果该文件是主要类）
      *
-     * @param list 包含所有项目资源的列表
+     * @param list                    包含所有项目资源的列表
      * @param findIdByProjectResource 需要更新包名的项目资源
-     * @param project 所属的项目
+     * @param project                 所属的项目
      */
     private void refreshPackageName(List<ProjectResource> list, ProjectResource findIdByProjectResource, Project project) {
         // 获取当前资源的子资源
@@ -422,7 +426,7 @@ public class ProjectService {
             ProjectResource second = tuple.getSecond();
             Long parentId = second.getParentId();
             // 查找父资源
-            ProjectResource projectResource = first.stream().filter(r -> r.getId() == parentId).findFirst().orElse(null);
+            ProjectResource projectResource = first.stream().filter(r -> Objects.equals(r.getId(), parentId)).findFirst().orElse(null);
             String packageName = "";
             if (projectResource != null) {
                 // 递归计算包名
@@ -484,7 +488,7 @@ public class ProjectService {
         // 如果内容不为空，则进行格式化
         if (StrUtil.isNotEmpty(projectResource.getContent())) {
             // 创建Java代码格式化器
-            Formatter formatter = new Formatter(JavaFormatterOptions.defaultOptions());
+           // Formatter formatter = new Formatter(JavaFormatterOptions.defaultOptions());
             // 格式化代码
             String formattedCode = formatter.formatSource(projectResource.getContent());
             // 更新资源内容为格式化后的代码
@@ -501,7 +505,7 @@ public class ProjectService {
      * 重命名文件
      *
      * @param projectResourceId 资源的ID，用于定位要重命名的项目资源
-     * @param name 新的文件名，不包含文件扩展名
+     * @param name              新的文件名，不包含文件扩展名
      * @return 返回重命名后的项目资源对象，如果找不到对应的资源则返回null
      */
     public ProjectResource reFileName(Long projectResourceId, String name) {
@@ -643,7 +647,7 @@ public class ProjectService {
      * 包名是通过从给定的parentId开始，逐级向上获取父资源的名称，并以点号连接
      *
      * @param projectId 项目ID，用于获取项目的所有资源
-     * @param parentId 父资源ID，用于定位资源树中的特定路径
+     * @param parentId  父资源ID，用于定位资源树中的特定路径
      * @return 返回构建的包名字符串，如果无法找到指定的父路径，则返回空字符串
      */
     private String getPackageName(Long projectId, Long parentId) {
@@ -679,7 +683,7 @@ public class ProjectService {
     /**
      * 替换源代码中的包名
      *
-     * @param codeInfo 源代码信息
+     * @param codeInfo       源代码信息
      * @param newPackageName 新的包名
      * @return 更新后的源代码
      */

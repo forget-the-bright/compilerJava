@@ -16,6 +16,5 @@ public class CompilerJavaApplication {
         // 输出一些测试信息
         log.info("=== 应用启动完成 ===");
         log.info("控制台输出捕获已启用");
-        log.info("你可以看到所有的 System.out.println() 输出");
     }
 } 
