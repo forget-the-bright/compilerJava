@@ -30,6 +30,7 @@
         <knife4j.version>4.4.0</knife4j.version>
         <mybatis-plus.version>3.5.12</mybatis-plus.version>
         <dynamic-datasource.version>4.3.1</dynamic-datasource.version>
+        <pty4j.version>0.12.10-jdk8</pty4j.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -156,6 +157,15 @@
             <groupId>com.google.googlejavaformat</groupId>
             <artifactId>google-java-format</artifactId>
             <version>${google-java-format}</version>
+        </dependency>
+
+        <!-- JPty 基础JNI实现 https://github.com/jawi/JPty -->
+        <!-- pty4j 伪终端实现 https://github.com/JetBrains/pty4j -->
+        <!-- pty4j 0.12.10-jdk8 截至0250709 唯一jdk8 版本 -->
+        <dependency>
+            <groupId>org.jetbrains.pty4j</groupId>
+            <artifactId>pty4j</artifactId>
+            <version>${pty4j.version}</version>
         </dependency>
     </dependencies>
     <build>

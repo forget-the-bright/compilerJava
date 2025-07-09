@@ -6,6 +6,8 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.hao.aspect.LogDefineConfig;
+import org.hao.compiler.config.log.ConsoleCapture;
+import org.hao.compiler.config.log.UserConsoleManager;
 import org.hao.core.print.PrintUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,13 +38,23 @@ public class AppRunAfterConfig implements CommandLineRunner {
     private void initRunner() {
         runnableList = ListUtil.of(
                 this::databaseInitializer,
-                this::setLogDefineConfig
+                this::setLogDefineConfig,
+                this::setLogOutPut
         );
     }
 
     @Override
     public void run(String... args) {
         runnableList.forEach(ThreadUtil::execute);
+    }
+
+    private void setLogOutPut() {
+        UserConsoleManager.initialize();
+        // 启动控制台输出捕获
+        ConsoleCapture.startCapture();
+        // 输出一些测试信息
+        log.info("=== 应用启动完成 ===");
+        log.info("控制台输出捕获已启用");
     }
 
     private void setLogDefineConfig() {

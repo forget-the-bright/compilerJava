@@ -23,6 +23,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.UUID;
 
 @Tag(name = "在线 Java 编译器")
 @Controller
@@ -53,6 +54,7 @@ public class CompilerController {
         Project projectById = projectService.getProjectById(Convert.toLong(projectId));
         modelAndView.addObject("projectId", projectId);
         modelAndView.addObject("project", projectById);
+        modelAndView.addObject("SessionId", UUID.randomUUID().toString());
         modelAndView.addObject("wsUrl", IPUtils.getBaseUrl().replace("http://", "ws://"));
         return modelAndView;
     }
@@ -74,6 +76,7 @@ public class CompilerController {
                     return;
                 }
                 SseEmitterWriter sseEmitterWriter = new SseEmitterWriter(emitter);
+                SseUtil.sendMegBase64Ln(emitter, "正在编译...");
                 Class<?> compile = CompilerUtil.compileAndLoadClass(code, sseEmitterWriter);
                 SseUtil.sendMegBase64Ln(emitter, "编译成功,开始执行...");
                 Method run = ReflectUtil.getMethod(compile, "run");

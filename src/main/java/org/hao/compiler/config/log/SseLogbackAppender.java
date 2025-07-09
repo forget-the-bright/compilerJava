@@ -1,4 +1,4 @@
-package org.hao.compiler.config;
+package org.hao.compiler.config.log;
 
 import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.classic.spi.ILoggingEvent;

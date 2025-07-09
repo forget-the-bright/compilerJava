@@ -1,4 +1,4 @@
-package org.hao.compiler.config;
+package org.hao.compiler.config.log;
 
 import java.io.*;
 import java.util.concurrent.CopyOnWriteArrayList;

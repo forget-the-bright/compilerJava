@@ -89,12 +89,19 @@ var GoldenConfig = {
                         },
                         // 第二行：实时日志
                         {
-                            type: 'row',
+                            type: 'stack',
                             height: 40,
                             content: [{
                                 type: 'component',
                                 componentName: 'console',
                                 title: '实时日志',
+                                componentState: {},
+                                // 👇 关键配置
+                                isClosable: false,
+                            }, {
+                                type: 'component',
+                                componentName: 'terminal',
+                                title: '控制台',
                                 componentState: {},
                                 // 👇 关键配置
                                 isClosable: false,
@@ -154,6 +161,9 @@ GoldenComponentMap.set('output', function (container, state) {
 });
 GoldenComponentMap.set('console', function (container, state) {
     container.getElement().html('<div id="logWindow" style="width: 100%; height: 100%;"></div>');
+});
+GoldenComponentMap.set('terminal', function (container, state) {
+    container.getElement().html('<div id="terminal" style="width: 100%; height: 100%;"></div>');
 });
 GoldenComponentMap.set('fileBrowser', function (container, state) {
     container.getElement().html('<div id="fileBrowser" style="width: 100%; height: 100%;"></div>');
@@ -422,7 +432,7 @@ function base64ToUtf8(base64) {
 //region 后端交互方法
 
 //保存文件函数
-function saveEditorFile(flushEditorContent,func) {
+function saveEditorFile(flushEditorContent, func) {
     let config = editor.getModel().config;
     if (!config) {
         // alert('请选择文件');
@@ -456,29 +466,31 @@ function saveEditorFile(flushEditorContent,func) {
 
 //编译当前文件函数
 function compileCurrentCode(resultWindowTerm) {
-    let config = editor.getModel().config;
-    if (!config) {
-        // alert('请选择文件');
-        return;
-    }
-    var eventSource = new EventSource(`${window.baseUrl}/compile/sse?ProjectResourceId=${encodeURIComponent(config.id)}`, {
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+    saveEditorFile(true,()=>{
+        let config = editor.getModel().config;
+        if (!config) {
+            // alert('请选择文件');
+            return;
+        }
+        var eventSource = new EventSource(`${window.baseUrl}/compile/sse?ProjectResourceId=${encodeURIComponent(config.id)}`, {
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+        });
+        $('#compileSseBtn').prop("disabled", true);
+        eventSource.onmessage = function (e) {
+            let message = e.data;
+            message = base64ToUtf8(message);
+            resultWindowTerm.write(message);
+        };
+        eventSource.onerror = function () {
+            eventSource.close();
+            $('#compileSseBtn').prop("disabled", false);
+        };
     });
-    $('#compileSseBtn').prop("disabled", true);
-    eventSource.onmessage = function (e) {
-        let message = e.data;
-        message = base64ToUtf8(message);
-        resultWindowTerm.write(message);
-    };
-    eventSource.onerror = function () {
-        eventSource.close();
-        $('#compileSseBtn').prop("disabled", false);
-    };
 }
 
 // 编译项目代码
 function compileProjectCode(resultWindowTerm) {
-    saveEditorFile(true,()=>{
+    saveEditorFile(true, () => {
         let projectId = window.projectId;
         var eventSource = new EventSource(`${window.baseUrl}/compileProject/sse?projectId=${projectId}`, {
             headers: {'Content-Type': 'application/x-www-form-urlencoded'}
