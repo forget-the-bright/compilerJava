@@ -1,7 +1,10 @@
 package org.hao.compiler.websocket;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessBuilder;
+import com.pty4j.WinSize;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.hao.vo.Tuple;
@@ -95,6 +98,19 @@ public class TerminalWSHandler {
     @SneakyThrows
     public void OnMessage(String message) {
         try {
+            if (message.contains("terminalTerm-resize")) {
+                try {
+                    JSONObject obj = JSON.parseObject(message);
+                    int cols = obj.getIntValue("cols");
+                    int rows = obj.getIntValue("rows");
+
+                    if (shellProcess != null && shellProcess.isAlive()) {
+                        shellProcess.setWinSize(new WinSize(cols, rows));
+                    }
+                    return;
+                } catch (Exception e) {
+                }
+            }
             // 正常输入写入 Shell 输入流
             shellInput.write(message.getBytes(StandardCharsets.UTF_8));
             shellInput.flush();

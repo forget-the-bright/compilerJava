@@ -524,3 +524,34 @@ function fillEditorFileContent(ProjectResourceId) {
 }
 
 //endregion
+
+//region mjs相关逻辑
+
+function getTermAndFitAddon(scrollback, document) {
+    let term = new xterm.Terminal({
+        cursorBlink: true,
+        fontFamily: 'monospace',
+        convertEol: true,     // 自动将 \n 转换为换行（可选）
+        scrollback: scrollback,  // 可选：设置滚动历史缓冲区大小
+        wrap: false,         // 关键：启用自动换行
+        wordWrap: false, // 开启自动换行
+        theme: { //https://xtermjs.org/docs/api/terminal/interfaces/itheme/ 主题配置文档
+            background: '#ffffff',
+            foreground: '#000000',
+            selectionBackground: 'rgba(0,120,255, 0.4)', // 蓝色 + 30% 透明度',
+            cursor: 'black',
+        },
+        macOptionIsMeta: true, // macOS 上 Option 键作为 Meta 键使用
+    });
+    let fitAddon = new xterm.FitAddon();
+    let webLinksAddon = new xterm.WebLinksAddon();
+    // let clipboardAddon = new ClipboardAddon.ClipboardAddon();
+    term.loadAddon(fitAddon);
+    // 加载并启用 WebLinksAddon，这允许识别和点击网页链接
+    term.loadAddon(webLinksAddon);
+    // term.loadAddon(clipboardAddon);
+    term.open(document);
+    fitAddon.fit();
+    return {term, fitAddon};
+}
+//endregion

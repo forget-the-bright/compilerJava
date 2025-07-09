@@ -15,8 +15,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
     <link rel="stylesheet" href="${domainUrl}/css/editor.css">
-
-    <script>
+    <script defer>
         window.baseUrl = "${domainUrl}";
         window.wsUrl = "${wsUrl}";
         window.projectId = "${projectId}";
@@ -45,15 +44,25 @@
 <script src="${domainUrl}/js/layout-config.js"></script>
 
 <#noparse>
-    <script>
-        var editor;
-        var layout;
+    <script type="module">
+        import {Terminal} from 'https://esm.sh/xterm@latest'
+        import {FitAddon} from 'https://esm.sh/xterm-addon-fit@latest';
+        import {WebLinksAddon} from 'https://esm.sh/xterm-addon-web-links@latest';
+        import {AttachAddon} from 'https://esm.sh/xterm-addon-attach@latest';
+        import {SerializeAddon} from 'https://esm.sh/xterm-addon-serialize@latest';
+
+        window.xterm = {Terminal, FitAddon, WebLinksAddon, AttachAddon, SerializeAddon};
+
+
+        var editor, layout;
         // 初始化布局
         layout = new GoldenLayout(GoldenConfig, '#layout-container');
         // 注册组件
         for (let [key, value] of GoldenComponentMap) {
             layout.registerComponent(key, value);
         }
+        // 初始化布局
+        layout.init();
         // 监听窗口大小变化，自动调整终端尺寸
         $(window).resize(function () {
             try {
@@ -61,45 +70,6 @@
             } catch (e) {
             }
         });
-    </script>
-
-    <script type="module">
-        // 初始化布局
-        layout.init();
-
-        import {Terminal} from 'https://esm.sh/xterm@latest'
-        import {FitAddon} from 'https://esm.sh/xterm-addon-fit@latest';
-        import {WebLinksAddon} from 'https://esm.sh/xterm-addon-web-links@latest';
-        import {AttachAddon} from 'https://esm.sh/xterm-addon-attach@latest';
-        import {SerializeAddon} from 'https://esm.sh/xterm-addon-serialize@latest';
-
-
-        function getTermAndFitAddon(scrollback, document) {
-            let term = new Terminal({
-                cursorBlink: true,
-                fontFamily: 'monospace',
-                convertEol: true,     // 自动将 \n 转换为换行（可选）
-                scrollback: scrollback,  // 可选：设置滚动历史缓冲区大小
-                wrap: true,         // 关键：启用自动换行
-                theme: { //https://xtermjs.org/docs/api/terminal/interfaces/itheme/ 主题配置文档
-                    background: '#ffffff',
-                    foreground: '#000000',
-                    selectionBackground: 'rgba(0,120,255, 0.4)', // 蓝色 + 30% 透明度',
-                    cursor: 'black',
-                },
-                macOptionIsMeta: true, // macOS 上 Option 键作为 Meta 键使用
-            });
-            let fitAddon = new FitAddon();
-            let webLinksAddon = new WebLinksAddon();
-            // let clipboardAddon = new ClipboardAddon.ClipboardAddon();
-            term.loadAddon(fitAddon);
-            // 加载并启用 WebLinksAddon，这允许识别和点击网页链接
-            term.loadAddon(webLinksAddon);
-            // term.loadAddon(clipboardAddon);
-            term.open(document);
-            fitAddon.fit();
-            return {term, fitAddon};
-        }
 
         const {term: logWindowTerm, fitAddon: logWindowFitAddon} = getTermAndFitAddon(10000, $('#logWindow')[0]);
         const {term: resultWindowTerm, fitAddon: resultWindowFitAddon} = getTermAndFitAddon(10000, $('#result')[0]);
@@ -113,18 +83,37 @@
             resizeTimeout = setTimeout(() => {
                 logWindowFitAddon.fit();
                 resultWindowFitAddon.fit();
-                terminalTermFitAddon.fit();
+                resizeWsTerminal();
             }, 100); // 延迟确保 DOM 已更新 // 只有最后一次会执行
         });
 
         // 开启控制台交互
         // 建立 WebSocket 连接
         const socket = new WebSocket(`${window.wsUrl}/terminalWS/${window.SessionId}`);
-        const attachAddon = new AttachAddon(socket);
-        const serializeAddon = new SerializeAddon();
+        const attachAddon = new xterm.AttachAddon(socket);
+        const serializeAddon = new xterm.SerializeAddon();
         terminalTerm.loadAddon(attachAddon);
         terminalTerm.loadAddon(serializeAddon);
 
+        function resizeWsTerminal() {
+            const val= terminalTermFitAddon.proposeDimensions(); // 获取推荐的尺寸
+            if (!val) return;
+
+            const cols = val.cols;
+            const rows = val.rows;
+            console.log("proposeDimensions:", cols, rows)
+            if (cols>30){
+                terminalTermFitAddon.fit();
+            }
+            if (cols<50){
+                return;
+            }
+            socket.send(JSON.stringify({
+                type: "terminalTerm-resize",
+                cols: cols,
+                rows: rows
+            }));
+        }
 
         // 将 SSE 日志写入终端
         var logSource = new EventSource(`${window.baseUrl}/log/stream?sessionId=${window.SessionId}`);
