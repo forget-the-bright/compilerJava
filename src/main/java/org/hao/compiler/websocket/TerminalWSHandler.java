@@ -7,18 +7,29 @@ import com.pty4j.PtyProcessBuilder;
 import com.pty4j.WinSize;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.hao.compiler.config.WsConfigurator;
+import org.hao.core.StrUtil;
+import org.hao.core.ip.IPUtils;
+import org.hao.core.thread.ThreadUtil;
 import org.hao.vo.Tuple;
 import org.springframework.stereotype.Component;
 
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
+import javax.xml.ws.handler.MessageContext;
 import java.io.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,7 +39,7 @@ import java.util.Map;
  * @since 2025/7/9 11:56
  */
 @Component
-@ServerEndpoint("/terminalWS/{SessionId}") //此注解相当于设置访问URL
+@ServerEndpoint(value = "/terminalWS/{SessionId}", configurator = WsConfigurator.class) //此注解相当于设置访问URL
 @Slf4j
 public class TerminalWSHandler {
     private Session session;
@@ -37,28 +48,38 @@ public class TerminalWSHandler {
     // 用于读取 Shell 输出并发送给前端
     private Thread outputThread;
 
+    private String clientIpAddress;
+    private StringBuffer passwordBuffer = new StringBuffer();
+    private boolean authorizedOrNot = false;
+
     @OnOpen
     @SneakyThrows
     public void onOpen(Session session,
                        @PathParam(value = "SessionId") String SessionId) {
+        clientIpAddress = session.getUserProperties().get("ipAddr").toString();
+        // log.info("来自【{}】的终端连接", clientIpAddress);
         this.session = session;
+        List<String> allIP = IPUtils.allIP;
+        if (allIP.contains(clientIpAddress) || isLoopbackAddress(clientIpAddress)) {
+            authorizedOrNot = true;
+            startShell();
+        } else {
+            sendToClient(StrUtil.formatFast("IP地址【{}】未授权访问 \r\n", clientIpAddress));
+            sendToClient("请输入授权密码: \r\n");
+        }
+    }
 
+    @SneakyThrows
+    private void startShell() {
         //ProcessBuilder pb;
         Tuple<String[], Map> shellCommand = getShellCommand();
         String[] cmd = shellCommand.getFirst();
         Map<String, String> env = shellCommand.getSecond();
         shellProcess = new PtyProcessBuilder().setCommand(cmd).setEnvironment(env).start();
-
-        //pb.redirectErrorStream(true); // 合并 stdout 和 stderr
-        // shellProcess = pb.start();
-
-        //shellInput = shellProcess.getOutputStream();
         shellInput = shellProcess.getOutputStream();
-
         // 读取 Shell 输出流并发送给前端
         outputThread = new Thread(this::readOutput);
         outputThread.start();
-
     }
 
     // 读取 Shell 输出并转发给前端
@@ -111,9 +132,31 @@ public class TerminalWSHandler {
                 } catch (Exception e) {
                 }
             }
-            // 正常输入写入 Shell 输入流
-            shellInput.write(message.getBytes(StandardCharsets.UTF_8));
-            shellInput.flush();
+            if (shellProcess != null && shellProcess.isAlive()) {
+                // 正常输入写入 Shell 输入流
+                shellInput.write(message.getBytes(StandardCharsets.UTF_8));
+                shellInput.flush();
+                return;
+            }
+            if (!authorizedOrNot) {
+                if (message.equals("\r")) {
+                    String password = passwordBuffer.toString();
+                    if (password.equals("ks125930.")) {
+                        authorizedOrNot = true;
+                        startShell();
+                    } else {
+                        sendToClient("\r\n");
+                        sendToClient("密码错误，请重新输入: \r\n");
+                        passwordBuffer.setLength(0);
+                    }
+                    return;
+                } else if (message.equals("\u007F") && passwordBuffer.length() > 0) {
+                    passwordBuffer.deleteCharAt(passwordBuffer.length() - 1);
+                    return;
+                }
+                //sendToClient(message);
+                passwordBuffer.append(message);
+            }
         } catch (Exception e) {
             log.error("Error writing input to shell", e);
         }
@@ -169,5 +212,17 @@ public class TerminalWSHandler {
             return false;
         }
     }
+
+    public static boolean isLoopbackAddress(String ipAddress) {
+        try {
+            InetAddress inetAddress = InetAddress.getByName(ipAddress);
+            return inetAddress.isLoopbackAddress();
+        } catch (UnknownHostException e) {
+            // 如果IP地址格式不正确，抛出异常
+            System.out.println("Invalid IP address: " + ipAddress);
+            return false;
+        }
+    }
+
 
 }

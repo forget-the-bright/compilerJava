@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hao.aspect.LogDefineConfig;
 import org.hao.compiler.config.log.ConsoleCapture;
 import org.hao.compiler.config.log.UserConsoleManager;
+import org.hao.core.ip.IPUtils;
 import org.hao.core.print.PrintUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.stereotype.Component;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 import java.util.List;
 
@@ -63,6 +65,8 @@ public class AppRunAfterConfig implements CommandLineRunner {
             Logger logger = LoggerFactory.getLogger(aClass);
             long endIntervalMs = System.currentTimeMillis();
             long intervalMs = endIntervalMs - beginIntervalMs;
+            HttpServletRequest request = org.hao.core.thread.ThreadUtil.getRequest();
+            String ipAddr = IPUtils.getIpAddr(request);
             String hour = LogDefineConfig.formatterHour.format(intervalMs);
             String minute = LogDefineConfig.formatterMinute.format(intervalMs);
             String second = LogDefineConfig.formatterSecond.format(intervalMs);
@@ -70,7 +74,7 @@ public class AppRunAfterConfig implements CommandLineRunner {
             if (flag) {
                 logger.error(PrintUtil.RED.getColorStr("错误信息: {}", error.getMessage()), error);
             }
-            logger.info(PrintUtil.RED.getColorStr("{}类的方法: {} 执行时间： {} 小时,{} 分钟,{} 秒,共 {} 毫秒 \r\n", className, methodName, hour, minute, second, intervalMs));
+            logger.info(PrintUtil.RED.getColorStr("来自【{}】 访问 {} 类的方法: {} 执行时间： {} 小时,{} 分钟,{} 秒,共 {} 毫秒 \r\n", ipAddr, className, methodName, hour, minute, second, intervalMs));
             return null;
         });
     }

@@ -52,8 +52,6 @@
         import {SerializeAddon} from 'https://esm.sh/xterm-addon-serialize@latest';
 
         window.xterm = {Terminal, FitAddon, WebLinksAddon, AttachAddon, SerializeAddon};
-
-
         var editor, layout;
         // 初始化布局
         layout = new GoldenLayout(GoldenConfig, '#layout-container');
@@ -74,7 +72,7 @@
         const {term: logWindowTerm, fitAddon: logWindowFitAddon} = getTermAndFitAddon(10000, $('#logWindow')[0]);
         const {term: resultWindowTerm, fitAddon: resultWindowFitAddon} = getTermAndFitAddon(10000, $('#result')[0]);
         const {term: terminalTerm, fitAddon: terminalTermFitAddon} = getTermAndFitAddon(10000, $('#terminal')[0]);
-        // console.log("terminal.options.theme:", resultWindowTerm.options.theme)
+        console.log("terminal.options.theme:", resultWindowTerm.options.theme)
 
         let resizeTimeout;
         // 同时监听 Golden Layout 的更新事件
@@ -96,16 +94,16 @@
         terminalTerm.loadAddon(serializeAddon);
 
         function resizeWsTerminal() {
-            const val= terminalTermFitAddon.proposeDimensions(); // 获取推荐的尺寸
+            const val = terminalTermFitAddon.proposeDimensions(); // 获取推荐的尺寸
             if (!val) return;
 
             const cols = val.cols;
             const rows = val.rows;
-            console.log("proposeDimensions:", cols, rows)
-            if (cols>30){
+           // console.log("proposeDimensions:", cols, rows)
+            if (cols > 30) {
                 terminalTermFitAddon.fit();
             }
-            if (cols<50){
+            if (cols < 50) {
                 return;
             }
             socket.send(JSON.stringify({
@@ -134,10 +132,7 @@
             resultWindowTerm.clear();
             logWindowTerm.clear();
         });
-
     </script>
 </#noparse>
-</body>
-</html>
 </body>
 </html>

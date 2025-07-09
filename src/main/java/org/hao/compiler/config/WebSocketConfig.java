@@ -64,5 +64,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSoc
         container.setMaxBinaryMessageBufferSize(65536);
         return container;
     }
+
+    @Bean
+    public WebSocketFilter webSocketFilter() {
+        return new WebSocketFilter();
+    }
 }
 
