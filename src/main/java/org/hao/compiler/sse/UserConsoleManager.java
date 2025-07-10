@@ -1,4 +1,4 @@
-package org.hao.compiler.config.log;
+package org.hao.compiler.sse;
 
 import lombok.SneakyThrows;
 

@@ -1,8 +1,7 @@
-package org.hao.compiler.config.log;
+package org.hao.compiler.sse;
 
 import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import org.hao.compiler.util.SseUtil;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;

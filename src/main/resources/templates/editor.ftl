@@ -14,6 +14,7 @@
     <!-- jstree -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
+    <link href="https://cdn.jsdelivr.net/npm/jquery-contextmenu@2.9.2/dist/jquery.contextMenu.min.css" rel="stylesheet">
     <link rel="stylesheet" href="${domainUrl}/css/editor.css">
     <script defer>
         window.baseUrl = "${domainUrl}";
@@ -27,6 +28,7 @@
 <div class="toolbar">
     <button id="compileSseBtn">编译当前文件运行</button>
     <button id="compileProjectSseBtn">编译项目运行</button>
+    <button id="compileProjectLocalSseBtn">编译Local项目运行</button>
     <button id="clearLogsBtn">清除日志</button>
     <button id="saveFile">保存文件</button>
 </div>
@@ -37,6 +39,7 @@
 <#--<script src="${domainUrl}/js/xterm-addon-clipboard.js"></script>-->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/jstree.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery-contextmenu@2.9.2/dist/jquery.contextMenu.min.js"></script>
 <script src="https://golden-layout.com/files/latest/js/goldenlayout.min.js"></script>
 <!-- Monaco Editor loader -->
 <script src="https://cdn.jsdelivr.net/npm/monaco-editor@latest/min/vs/loader.js"></script>
@@ -68,12 +71,14 @@
             } catch (e) {
             }
         });
-
         const {term: logWindowTerm, fitAddon: logWindowFitAddon} = getTermAndFitAddon(10000, $('#logWindow')[0]);
         const {term: resultWindowTerm, fitAddon: resultWindowFitAddon} = getTermAndFitAddon(10000, $('#result')[0]);
         const {term: terminalTerm, fitAddon: terminalTermFitAddon} = getTermAndFitAddon(10000, $('#terminal')[0]);
-        console.log("terminal.options.theme:", resultWindowTerm.options.theme)
-
+        window.layoutTerm = {
+            logWindowTerm,
+            resultWindowTerm,
+            terminalTerm,
+        }
         let resizeTimeout;
         // 同时监听 Golden Layout 的更新事件
         layout.on('stateChanged', function () {
@@ -84,14 +89,38 @@
                 resizeWsTerminal();
             }, 100); // 延迟确保 DOM 已更新 // 只有最后一次会执行
         });
-
         // 开启控制台交互
-        // 建立 WebSocket 连接
-        const socket = new WebSocket(`${window.wsUrl}/terminalWS/${window.SessionId}`);
-        const attachAddon = new xterm.AttachAddon(socket);
         const serializeAddon = new xterm.SerializeAddon();
-        terminalTerm.loadAddon(attachAddon);
         terminalTerm.loadAddon(serializeAddon);
+        connectionTerminalWS(terminalTerm);
+        // 初始化右键菜单（绑定到所有 .context-menu-target 元素）
+        $.contextMenu({
+            selector: '.fa-unlink,#terminal',
+            trigger: 'right', // 触发方式是右键点击
+            build: function ($triggerElement, e) {
+                // 判断是否满足条件（比如 data-context 是否为 "true"）
+                if ($triggerElement.attr('data-context') === 'true') {
+                    return {
+                        items: {
+                            reconnect: {
+                                name: "重连",
+                                icon: "fas fa-link",
+                                callback: function (key, options) {
+                                    connectionTerminalWS(terminalTerm);
+                                }
+                            },
+                        }
+                    };
+                } else {
+                    // 不符合要求时返回 false，不显示菜单
+                    return false;
+                }
+            },
+            callback: function (key, options) {
+
+            }
+        });
+
 
         function resizeWsTerminal() {
             const val = terminalTermFitAddon.proposeDimensions(); // 获取推荐的尺寸
@@ -99,7 +128,7 @@
 
             const cols = val.cols;
             const rows = val.rows;
-           // console.log("proposeDimensions:", cols, rows)
+            // console.log("proposeDimensions:", cols, rows)
             if (cols > 30) {
                 terminalTermFitAddon.fit();
             }
@@ -127,6 +156,8 @@
         $('#compileSseBtn').click(() => compileCurrentCode(resultWindowTerm));
         // 编译项目按钮事件
         $('#compileProjectSseBtn').click(() => compileProjectCode(resultWindowTerm));
+
+        $('#compileProjectLocalSseBtn').click(() => compileProjectCode(resultWindowTerm));
         // 清除日志按钮事件
         $('#clearLogsBtn').click(() => {
             resultWindowTerm.clear();

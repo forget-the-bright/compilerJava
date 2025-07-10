@@ -1,4 +1,4 @@
-package org.hao.compiler.util;
+package org.hao.compiler.sse;
 
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 

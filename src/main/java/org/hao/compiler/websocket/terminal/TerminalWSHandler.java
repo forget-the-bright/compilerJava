@@ -1,4 +1,4 @@
-package org.hao.compiler.websocket;
+package org.hao.compiler.websocket.terminal;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -7,7 +7,7 @@ import com.pty4j.PtyProcessBuilder;
 import com.pty4j.WinSize;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.hao.compiler.config.WsConfigurator;
+import org.hao.compiler.config.ws.ObjectPrincipal;
 import org.hao.core.StrUtil;
 import org.hao.core.ip.IPUtils;
 import org.hao.vo.Tuple;
@@ -20,12 +20,12 @@ import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.*;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+
+import static org.hao.compiler.websocket.terminal.TerminalWSUtil.*;
 
 /**
  * TODO
@@ -34,32 +34,19 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @since 2025/7/9 11:56
  */
 @Component
-@ServerEndpoint(value = "/terminalWS/{SessionId}", configurator = WsConfigurator.class) //此注解相当于设置访问URL
+@ServerEndpoint(value = "/terminalWS/{SessionId}") //, configurator = WsConfigurator.class 此注解相当于设置访问URL
 @Slf4j
 public class TerminalWSHandler {
-    private static final ConcurrentHashMap<String, CopyOnWriteArraySet<TerminalWSHandler>> sessions = new ConcurrentHashMap<>();
     private Session session;
-
-    private static final ConcurrentHashMap<String, PtyProcess> shellProcess = new ConcurrentHashMap<>();
-    // private PtyProcess shellProcess;
-    // 用于读取 Shell 输出并发送给前端
     private Thread outputThread;
     private String clientIpAddress;
+
+    private static final ConcurrentHashMap<String, CopyOnWriteArraySet<TerminalWSHandler>> sessions = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, PtyProcess> shellProcess = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, StringBuffer> passwordBuffer = new ConcurrentHashMap<>();
-    // private StringBuffer passwordBuffer = new StringBuffer();
     private static final ConcurrentHashMap<String, Boolean> authorizedOrNot = new ConcurrentHashMap<>();
-    //private boolean authorizedOrNot = false;
     private static final ConcurrentHashMap<String, MessageHistory> lastMessage = new ConcurrentHashMap<>();
 
-    // 清屏码
-    private static final String clearCommand = "\u001B[2J\u001B[0;0f"; // ANSI escape code for clear screen
-    // 退格码
-    private static final String backspaceCommand = "\u007F"; // ANSI escape code for backspace
-    private static final String sendBackspaceCommand = "\b \b"; // ANSI escape code for backspace
-    // 回车码
-    private static final String enterCommand = "\r"; // ANSI escape code for enter
-    // 换行码
-    private static final String newline = "\r\n"; // ANSI escape code for newLine
 
     @OnOpen
     @SneakyThrows
@@ -68,7 +55,8 @@ public class TerminalWSHandler {
 
         this.session = session;
         List<String> allIP = IPUtils.allIP;
-        clientIpAddress = session.getUserProperties().get("ipAddr").toString();
+        ObjectPrincipal<Map<String, Object>> userPrincipal = (ObjectPrincipal) session.getUserPrincipal();
+        clientIpAddress = userPrincipal.getObject().get("ipAddr").toString();
 
         CopyOnWriteArraySet<TerminalWSHandler> terminalWSHandlers = sessions.computeIfAbsent(clientIpAddress, k -> new CopyOnWriteArraySet<>());
         terminalWSHandlers.add(this);
@@ -76,7 +64,7 @@ public class TerminalWSHandler {
         int clientIpSum = terminalWSHandlers.size();
         log.info("有新的链接进入,当前 {} 链接总会话: {}, 当前访问ip [{}] 会话数量: {}", this.getClass().getSimpleName(), countSum, clientIpAddress, clientIpSum);
 
-        if (allIP.contains(clientIpAddress)) {//|| isLoopbackAddress(clientIpAddress)
+        if (allIP.contains(clientIpAddress) || isLoopbackAddress(clientIpAddress)) {//
             authorizedOrNot.computeIfAbsent(clientIpAddress, k -> true);
             startShell();
         } else if (!authorizedOrNot.computeIfAbsent(clientIpAddress, k -> false) && clientIpSum <= 1) {
@@ -84,8 +72,8 @@ public class TerminalWSHandler {
             passwordBuffer.computeIfAbsent(clientIpAddress, k -> new StringBuffer());
             sendToClient(StrUtil.formatFast("IP地址【{}】未授权访问 {}", clientIpAddress, newline));
             sendToClient(StrUtil.formatFast("请输入授权密码: {}", newline));
-            // return;
         }
+        // 同步历史消息
         if (clientIpSum > 1) {
             MessageHistory messageHistory = lastMessage.get(clientIpAddress);
             if (messageHistory != null) {
@@ -136,7 +124,7 @@ public class TerminalWSHandler {
     // 发送数据到前端
     private void sendToClient(String message) {
         CopyOnWriteArraySet<TerminalWSHandler> terminalWSHandlers = sessions.get(clientIpAddress);
-        if(!authorizedOrNot.computeIfAbsent(clientIpAddress, k -> false)){
+        if (!authorizedOrNot.computeIfAbsent(clientIpAddress, k -> false)) {
             //存储100条历史消息
             MessageHistory messageHistory = lastMessage.computeIfAbsent(clientIpAddress, k -> new MessageHistory(100));
             messageHistory.addMessage(message);
@@ -208,7 +196,7 @@ public class TerminalWSHandler {
                 if (message.equals(enterCommand)) {
                     // 如果监听到回车码,进行密码验证
                     String password = passwordBuffer.get(clientIpAddress).toString();
-                    if (password.equals("ks125930.")) {
+                    if (password.equals(terminalPassword)) {
                         // 授权成功
                         authorizedOrNot.put(clientIpAddress, true);
                         //authorizedOrNot = true;
@@ -238,75 +226,5 @@ public class TerminalWSHandler {
             log.error("Error writing input to shell", e);
         }
     }
-
-    private String generateStars(int length) {
-        char[] stars = new char[length];
-        Arrays.fill(stars, '*');
-
-        return new String(stars);
-    }
-
-    private Tuple<String[], Map> getShellCommand() {
-        Map<String, String> env = new HashMap<>(System.getenv());
-        String os = System.getProperty("os.name").toLowerCase();
-        String[] order;
-        if (os.contains("win")) {
-            order = getPreferredShellCommand();
-            if (order[0].equals("cmd.exe")) {
-                env.put("TERM", "xterm");
-            } else {
-                env.put("TERM", "xterm-256color");
-            }
-        } else if (os.contains("linux")) {
-            order = new String[]{"/bin/bash"};
-        } else if (os.contains("mac")) {
-            order = new String[]{"/bin/zsh"};
-        } else {
-            order = new String[]{"/bin/sh"};
-        }
-        return Tuple.newTuple(order, env);
-    }
-
-    private String[] getPreferredShellCommand() {
-        // 检查 pwsh 是否存在
-        if (isCommandAvailable("pwsh.exe")) {
-            return new String[]{"pwsh.exe", "-NoProfile", "-NonInteractive"};
-        }
-        // 检查 powershell.exe 是否存在
-        if (isCommandAvailable("powershell.exe")) {
-            return new String[]{"powershell.exe", "-NoProfile", "-NonInteractive"};
-        }
-        // 默认回退到 cmd.exe
-        return new String[]{"cmd.exe"};
-    }
-
-    /**
-     * 判断指定的命令是否可用
-     *
-     * @param command 命令名称（例如 "pwsh.exe" 或 "powershell.exe"）
-     * @return 如果命令可用返回 true，否则返回 false
-     */
-    private boolean isCommandAvailable(String command) {
-        try {
-            ProcessBuilder pb = new ProcessBuilder("where", command);
-            Process process = pb.start();
-            int exitCode = process.waitFor();
-            return exitCode == 0;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    public static boolean isLoopbackAddress(String ipAddress) {
-        try {
-            InetAddress inetAddress = InetAddress.getByName(ipAddress);
-            return inetAddress.isLoopbackAddress();
-        } catch (UnknownHostException e) {
-            // 如果IP地址格式不正确，抛出异常
-            System.out.println("Invalid IP address: " + ipAddress);
-            return false;
-        }
-    }
-
 
 }

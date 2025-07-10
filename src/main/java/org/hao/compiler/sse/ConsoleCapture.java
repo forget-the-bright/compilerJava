@@ -1,9 +1,8 @@
-package org.hao.compiler.config.log;
+package org.hao.compiler.sse;
 
 import java.io.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.hao.compiler.util.SseUtil;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 public class ConsoleCapture {

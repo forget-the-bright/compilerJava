@@ -1,5 +1,5 @@
 <configuration>
-    <appender name="SSE" class="org.hao.compiler.config.log.SseLogbackAppender" />
+    <appender name="SSE" class="org.hao.compiler.sse.SseLogbackAppender" />
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>

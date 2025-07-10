@@ -7,9 +7,10 @@ import cn.hutool.core.util.StrUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.hao.compiler.entity.Project;
+import org.hao.compiler.process.JavaRunProcess;
 import org.hao.compiler.service.ProjectService;
-import org.hao.compiler.util.SseEmitterWriter;
-import org.hao.compiler.util.SseUtil;
+import org.hao.compiler.sse.SseEmitterWriter;
+import org.hao.compiler.sse.SseUtil;
 import org.hao.core.compiler.CompilerUtil;
 import org.hao.core.compiler.InMemoryClassLoader;
 import org.hao.core.ip.IPUtils;
@@ -140,6 +141,56 @@ public class CompilerController {
                 ReflectUtil.invoke(null, main);
                /* Object o = ReflectUtil.newInstance(compile);
                 ReflectUtil.invoke(o, "run");*/
+                SseUtil.sendMegBase64Ln(emitter, "执行完毕！");
+            } catch (Exception e) {
+                try {
+                    SseUtil.sendMegBase64Ln(emitter, "编译异常：" + e.getMessage() + "");
+                } catch (IOException ignored) {
+                }
+                e.printStackTrace();
+            } finally {
+                emitter.complete();
+            }
+        }).start();
+        return emitter;
+    }
+
+
+    @Operation(summary = "编译项目代码本地SSE")
+    @GetMapping("/compileProjectLocal/sse")
+    @ResponseBody
+    public SseEmitter compileProjectLocalSse(@RequestParam String projectId) {
+        SseEmitter emitter = new SseEmitter();
+        new Thread(() -> {
+            try {
+                if (StrUtil.isEmpty(projectId)) {
+                    SseUtil.sendMegBase64Ln(emitter, "代码不能为空,请输入代码！");
+                    return;
+                }
+                Project projectById = projectService.getProjectById(Long.parseLong(projectId));
+                if (projectById == null) {
+                    SseUtil.sendMegBase64Ln(emitter, "项目不存在！");
+                    return;
+                }
+                if (StrUtil.isEmpty(projectById.getMainClass())) {
+                    SseUtil.sendMegBase64Ln(emitter, "项目没有主类！");
+                    return;
+                }
+                SseEmitterWriter sseEmitterWriter = new SseEmitterWriter(emitter);
+                List<String> contents = projectService.getProjectSourceContentsByProjectId(Long.parseLong(projectId));
+                SseUtil.sendMegBase64Ln(emitter, "正在编译...");
+                String outPutDir = StrUtil.format("./compile_output/project_{}/", projectId);
+                CompilerUtil.compileToLocalFile(
+                        outPutDir,
+                        sseEmitterWriter,
+                        contents
+                                .stream()
+                                .filter(code -> StrUtil.isNotEmpty(code)).toArray(String[]::new));
+                SseUtil.sendMegBase64Ln(emitter, "编译成功,开始执行...");
+                //todo 调用本地控制台监听
+                String mainClass = projectById.getMainClass();
+                JavaRunProcess javaRunProcess = new JavaRunProcess(outPutDir, mainClass, emitter);
+                javaRunProcess.run();
                 SseUtil.sendMegBase64Ln(emitter, "执行完毕！");
             } catch (Exception e) {
                 try {

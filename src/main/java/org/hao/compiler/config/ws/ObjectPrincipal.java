@@ -1,6 +1,5 @@
-package org.hao.compiler.config;
+package org.hao.compiler.config.ws;
 
-import javax.security.auth.Subject;
 import java.security.Principal;
 
 /**

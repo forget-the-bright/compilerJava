@@ -1,4 +1,4 @@
-package org.hao.compiler.websocket;
+package org.hao.compiler.websocket.lsp;
 
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;

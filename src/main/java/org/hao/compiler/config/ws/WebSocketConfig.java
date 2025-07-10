@@ -1,9 +1,8 @@
-package org.hao.compiler.config;
+package org.hao.compiler.config.ws;
 
 import cn.hutool.extra.spring.SpringUtil;
-import org.hao.compiler.websocket.LspWSEndPoint;
-import org.hao.compiler.websocket.LspWebSocketHandler;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.hao.compiler.websocket.lsp.LspWSEndPoint;
+import org.hao.compiler.websocket.lsp.LspWebSocketHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.*;

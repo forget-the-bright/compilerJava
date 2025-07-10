@@ -101,7 +101,7 @@ var GoldenConfig = {
                             }, {
                                 type: 'component',
                                 componentName: 'terminal',
-                                title: '控制台',
+                                title: '<span class="fas fa-link" id="termianl-title"> 控制台</span>',
                                 componentState: {},
                                 // 👇 关键配置
                                 isClosable: false,
@@ -466,7 +466,7 @@ function saveEditorFile(flushEditorContent, func) {
 
 //编译当前文件函数
 function compileCurrentCode(resultWindowTerm) {
-    saveEditorFile(true,()=>{
+    saveEditorFile(true, () => {
         let config = editor.getModel().config;
         if (!config) {
             // alert('请选择文件');
@@ -492,7 +492,7 @@ function compileCurrentCode(resultWindowTerm) {
 function compileProjectCode(resultWindowTerm) {
     saveEditorFile(true, () => {
         let projectId = window.projectId;
-        var eventSource = new EventSource(`${window.baseUrl}/compileProject/sse?projectId=${projectId}`, {
+        var eventSource = new EventSource(`${window.baseUrl}/compileProjectLocal/sse?projectId=${projectId}`, {
             headers: {'Content-Type': 'application/x-www-form-urlencoded'}
         });
         $('#compileProjectSseBtn').prop("disabled", true);
@@ -523,6 +523,23 @@ function fillEditorFileContent(ProjectResourceId) {
         .catch(error => console.error('Error fetching file:', error));
 }
 
+// 建立 WebSocket 连接
+function connectionTerminalWS(terminalTerm) {
+    const socket = new WebSocket(`${window.wsUrl}/terminalWS/${window.SessionId}`);
+    window.socket = socket;
+    socket.onclose = function () {
+        $("#termianl-title").attr('class', 'fas fa-unlink');
+        $("#termianl-title").attr('data-context', 'true');
+        $("#terminal").attr('data-context', 'true');
+        console.log("WebSocket connection closed.");
+    };
+    socket.onopen = function () {
+        $("#termianl-title").attr('class', 'fas fa-link');
+        console.log("WebSocket connection opened.");
+    };
+    const attachAddon = new xterm.AttachAddon(socket);
+    terminalTerm.loadAddon(attachAddon);
+}
 //endregion
 
 //region mjs相关逻辑
@@ -554,4 +571,5 @@ function getTermAndFitAddon(scrollback, document) {
     fitAddon.fit();
     return {term, fitAddon};
 }
+
 //endregion

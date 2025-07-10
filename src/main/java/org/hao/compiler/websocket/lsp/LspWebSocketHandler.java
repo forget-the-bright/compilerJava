@@ -1,6 +1,5 @@
-package org.hao.compiler.websocket;
+package org.hao.compiler.websocket.lsp;
 
-import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
