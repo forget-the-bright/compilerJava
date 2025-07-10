@@ -153,12 +153,18 @@
         //保存文件按钮事件
         $('#saveFile').click(() => saveEditorFile(true));
         // 编译按钮事件
-        $('#compileSseBtn').click(() => compileCurrentCode(resultWindowTerm));
+        $('#compileSseBtn').click(() => {
+            activateTabByTitle('console', layout);
+            compileCurrentCode(resultWindowTerm);
+        });
         // 编译项目按钮事件
-        $('#compileProjectSseBtn').click(() => compileProjectCode(resultWindowTerm, '#compileProjectSseBtn', 'compileProject'));
+        $('#compileProjectSseBtn').click(() => {
+            activateTabByTitle('console', layout);
+            compileProjectCode(resultWindowTerm, '#compileProjectSseBtn', 'compileProject')
+        });
         // 编译本地项目按钮事件
         $('#compileProjectLocalSseBtn').click(() => {
-            activateTabByTitle('output',layout)
+            activateTabByTitle('output', layout)
             compileProjectCode(resultWindowTerm, '#compileProjectLocalSseBtn', 'compileProjectLocal');
         });
         // 清除日志按钮事件
