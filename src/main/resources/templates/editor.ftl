@@ -155,9 +155,9 @@
         // 编译按钮事件
         $('#compileSseBtn').click(() => compileCurrentCode(resultWindowTerm));
         // 编译项目按钮事件
-        $('#compileProjectSseBtn').click(() => compileProjectCode(resultWindowTerm));
-
-        $('#compileProjectLocalSseBtn').click(() => compileProjectCode(resultWindowTerm));
+        $('#compileProjectSseBtn').click(() => compileProjectCode(resultWindowTerm,'#compileProjectSseBtn','compileProject'));
+        // 编译本地项目按钮事件
+        $('#compileProjectLocalSseBtn').click(() => compileProjectCode(resultWindowTerm,'#compileProjectLocalSseBtn','compileProjectLocal'));
         // 清除日志按钮事件
         $('#clearLogsBtn').click(() => {
             resultWindowTerm.clear();

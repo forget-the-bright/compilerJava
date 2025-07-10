@@ -489,13 +489,13 @@ function compileCurrentCode(resultWindowTerm) {
 }
 
 // 编译项目代码
-function compileProjectCode(resultWindowTerm) {
+function compileProjectCode(resultWindowTerm,docmentId,interfaceAddress) {
     saveEditorFile(true, () => {
         let projectId = window.projectId;
-        var eventSource = new EventSource(`${window.baseUrl}/compileProjectLocal/sse?projectId=${projectId}`, {
+        var eventSource = new EventSource(`${window.baseUrl}/${interfaceAddress}/sse?projectId=${projectId}`, {
             headers: {'Content-Type': 'application/x-www-form-urlencoded'}
         });
-        $('#compileProjectSseBtn').prop("disabled", true);
+        $(`${docmentId}`).prop("disabled", true);
         eventSource.onmessage = function (e) {
             let message = e.data;
             message = base64ToUtf8(message);
@@ -504,7 +504,7 @@ function compileProjectCode(resultWindowTerm) {
         eventSource.onerror = function () {
             eventSource.close();
             console.log('compileProject eventSource is error close ');
-            $('#compileProjectSseBtn').prop("disabled", false);
+            $(`${docmentId}`).prop("disabled", false);
         };
     });
 }
