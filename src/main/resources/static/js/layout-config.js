@@ -73,39 +73,50 @@ var GoldenConfig = {
 
                                     }]
                                 },
-                                {
-                                    type: 'column',
-                                    width: 30,
-                                    content: [{
-                                        type: 'component',
-                                        componentName: 'output',
-                                        title: '编译输出',
-                                        componentState: {},
-                                        // 👇 关键配置
-                                        isClosable: false,
-                                    }]
-                                }
+                                /*  {
+                                      type: 'column',
+                                      width: 30,
+                                      content: [
+                                          {
+                                          type: 'component',
+                                          componentName: 'output',
+                                          title: '编译输出',
+                                          componentState: {},
+                                          // 👇 关键配置
+                                          isClosable: false,
+                                          }
+                                      ]
+                                  }*/
                             ]
                         },
                         // 第二行：实时日志
                         {
                             type: 'stack',
                             height: 40,
-                            content: [{
-                                type: 'component',
-                                componentName: 'console',
-                                title: '实时日志',
-                                componentState: {},
-                                // 👇 关键配置
-                                isClosable: false,
-                            }, {
-                                type: 'component',
-                                componentName: 'terminal',
-                                title: '<span class="fas fa-link" id="termianl-title"> 控制台</span>',
-                                componentState: {},
-                                // 👇 关键配置
-                                isClosable: false,
-                            }]
+                            content: [
+                                {
+                                    type: 'component',
+                                    componentName: 'terminal',
+                                    title: '<span class="fas fa-link" id="termianl-title"> 控制台</span>',
+                                    componentState: {},
+                                    // 👇 关键配置
+                                    isClosable: false,
+                                }, {
+                                    type: 'component',
+                                    componentName: 'console',
+                                    title: '实时日志',
+                                    componentState: {},
+                                    // 👇 关键配置
+                                    isClosable: false,
+                                }, {
+                                    type: 'component',
+                                    componentName: 'output',
+                                    title: '编译输出',
+                                    componentState: {},
+                                    // 👇 关键配置
+                                    isClosable: false,
+                                },
+                            ]
                         }
                     ]
                 }
@@ -427,6 +438,17 @@ function base64ToUtf8(base64) {
     }).join(''));
 }
 
+function activateTabByTitle(titleToFind,layout) {
+    // 假设你有一个组件的 reference
+    const componentItem = layout.root.getItemsByFilter(function(item) {
+        return item.type === 'component' && item.componentName === titleToFind;
+    })[0];
+    console.log('componentItem', componentItem)
+    if (componentItem && componentItem.parent && componentItem.parent.setActiveContentItem) {
+        componentItem.parent.setActiveContentItem(componentItem);
+    }
+}
+
 //endregion
 
 //region 后端交互方法
@@ -489,7 +511,7 @@ function compileCurrentCode(resultWindowTerm) {
 }
 
 // 编译项目代码
-function compileProjectCode(resultWindowTerm,docmentId,interfaceAddress) {
+function compileProjectCode(resultWindowTerm, docmentId, interfaceAddress) {
     saveEditorFile(true, () => {
         let projectId = window.projectId;
         var eventSource = new EventSource(`${window.baseUrl}/${interfaceAddress}/sse?projectId=${projectId}`, {
@@ -525,21 +547,27 @@ function fillEditorFileContent(ProjectResourceId) {
 
 // 建立 WebSocket 连接
 function connectionTerminalWS(terminalTerm) {
+    // 清空终端
+    terminalTerm.clear();
     const socket = new WebSocket(`${window.wsUrl}/terminalWS/${window.SessionId}`);
     window.socket = socket;
     socket.onclose = function () {
         $("#termianl-title").attr('class', 'fas fa-unlink');
         $("#termianl-title").attr('data-context', 'true');
         $("#terminal").attr('data-context', 'true');
+        terminalTerm.write('\r\n \r\n');
+        terminalTerm.write("\u001b[31;2m  连接已断开,请呼出右键菜单点击重连 ! ! ! \u001b[0;39m \r\n \r\n");
         console.log("WebSocket connection closed.");
     };
     socket.onopen = function () {
         $("#termianl-title").attr('class', 'fas fa-link');
         console.log("WebSocket connection opened.");
+        terminalTerm.clear();
     };
     const attachAddon = new xterm.AttachAddon(socket);
     terminalTerm.loadAddon(attachAddon);
 }
+
 //endregion
 
 //region mjs相关逻辑

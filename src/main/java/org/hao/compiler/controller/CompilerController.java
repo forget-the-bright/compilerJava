@@ -139,8 +139,6 @@ public class CompilerController {
                     return;
                 }
                 ReflectUtil.invoke(null, main);
-               /* Object o = ReflectUtil.newInstance(compile);
-                ReflectUtil.invoke(o, "run");*/
                 SseUtil.sendMegBase64Ln(emitter, "执行完毕！");
             } catch (Exception e) {
                 try {
@@ -191,14 +189,12 @@ public class CompilerController {
                 String mainClass = projectById.getMainClass();
                 JavaRunProcess javaRunProcess = new JavaRunProcess(outPutDir, mainClass, emitter);
                 javaRunProcess.run();
-                SseUtil.sendMegBase64Ln(emitter, "执行完毕！");
             } catch (Exception e) {
                 try {
                     SseUtil.sendMegBase64Ln(emitter, "编译异常：" + e.getMessage() + "");
                 } catch (IOException ignored) {
                 }
                 e.printStackTrace();
-            } finally {
                 emitter.complete();
             }
         }).start();

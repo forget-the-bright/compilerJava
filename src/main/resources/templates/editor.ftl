@@ -27,7 +27,7 @@
 <body>
 <div class="toolbar">
     <button id="compileSseBtn">编译当前文件运行</button>
-    <button id="compileProjectSseBtn">编译项目运行</button>
+    <#--    <button id="compileProjectSseBtn">编译项目运行</button>-->
     <button id="compileProjectLocalSseBtn">编译Local项目运行</button>
     <button id="clearLogsBtn">清除日志</button>
     <button id="saveFile">保存文件</button>
@@ -155,9 +155,12 @@
         // 编译按钮事件
         $('#compileSseBtn').click(() => compileCurrentCode(resultWindowTerm));
         // 编译项目按钮事件
-        $('#compileProjectSseBtn').click(() => compileProjectCode(resultWindowTerm,'#compileProjectSseBtn','compileProject'));
+        $('#compileProjectSseBtn').click(() => compileProjectCode(resultWindowTerm, '#compileProjectSseBtn', 'compileProject'));
         // 编译本地项目按钮事件
-        $('#compileProjectLocalSseBtn').click(() => compileProjectCode(resultWindowTerm,'#compileProjectLocalSseBtn','compileProjectLocal'));
+        $('#compileProjectLocalSseBtn').click(() => {
+            activateTabByTitle('output',layout)
+            compileProjectCode(resultWindowTerm, '#compileProjectLocalSseBtn', 'compileProjectLocal');
+        });
         // 清除日志按钮事件
         $('#clearLogsBtn').click(() => {
             resultWindowTerm.clear();
