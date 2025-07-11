@@ -11,8 +11,14 @@ body {
     padding: 5px 15px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
 }
-
+.left-group,
+.right-group,
+.center-group {
+    display: flex;
+    /*gap: 10px;*/
+}
 #layout-container {
     position: absolute;
     top: 40px;
@@ -48,7 +54,12 @@ body {
     opacity: 0.6; /* 可选：降低透明度 */
     border-color: #bbbbbb; /* 可选：调整边框颜色 */
 }
-
+.fa-play:not([disabled]){
+    background: limegreen !important;
+}
+.fa-stop:not([disabled]) {
+    background: red !important;
+}
 .toolbar button:hover {
     background: #0056b3;
 }

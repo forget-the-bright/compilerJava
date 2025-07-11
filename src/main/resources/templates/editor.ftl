@@ -26,11 +26,20 @@
 </head>
 <body>
 <div class="toolbar">
-    <button id="compileSseBtn">编译当前文件运行</button>
-    <#--    <button id="compileProjectSseBtn">编译项目运行</button>-->
-    <button id="compileProjectLocalSseBtn">编译Local项目运行</button>
-    <button id="clearLogsBtn">清除日志</button>
-    <button id="saveFile">保存文件</button>
+    <div class="left-group">
+        <button id="compileSseBtn">编译当前文件运行</button>
+        <#--    <button id="compileProjectSseBtn">编译项目运行</button>-->
+        <#--        <button id="compileProjectLocalSseBtn">编译Local项目运行</button>-->
+        <button id="clearLogsBtn">清除日志</button>
+        <button id="saveFile">保存文件</button>
+    </div>
+    <div class="center-group">
+        <button id="compileProjectLocalSseBtn" class="fas fa-play" >&nbsp;启动</button>
+        <button id="terminationBtn"  class="fas fa-stop" style="display: none;">&nbsp;终止</button>
+    </div>
+    <div class="right-group">
+
+    </div>
 </div>
 <div id="layout-container"></div>
 
@@ -91,7 +100,7 @@
         });
         // 开启控制台交互
         const serializeAddon = new xterm.SerializeAddon();
-      //  terminalTerm.loadAddon(serializeAddon);
+        //  terminalTerm.loadAddon(serializeAddon);
         connectionTerminalWS(terminalTerm);
         // 初始化右键菜单（绑定到所有 .context-menu-target 元素）
         $.contextMenu({
@@ -120,6 +129,7 @@
 
             }
         });
+
         function resizeWsTerminal() {
             const val = terminalTermFitAddon.proposeDimensions(); // 获取推荐的尺寸
             if (!val) return;

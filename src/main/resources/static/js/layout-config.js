@@ -517,6 +517,9 @@ function compileProjectCode(resultWindowTerm, docmentId, interfaceAddress) {
         var eventSource = new EventSource(`${window.baseUrl}/${interfaceAddress}/sse?projectId=${projectId}`, {
             headers: {'Content-Type': 'application/x-www-form-urlencoded'}
         });
+        if (interfaceAddress.indexOf("Local") !== -1){
+            $('#terminationBtn').attr("style", '');
+        }
         $(`${docmentId}`).prop("disabled", true);
         eventSource.onmessage = function (e) {
             let message = e.data;
@@ -527,6 +530,9 @@ function compileProjectCode(resultWindowTerm, docmentId, interfaceAddress) {
             eventSource.close();
             console.log('compileProject eventSource is error close ');
             $(`${docmentId}`).prop("disabled", false);
+            if (interfaceAddress.indexOf("Local") !== -1){
+                $('#terminationBtn').attr("style", 'display: none;');
+            }
         };
     });
 }
