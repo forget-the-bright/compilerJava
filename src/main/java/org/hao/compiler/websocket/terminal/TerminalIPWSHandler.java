@@ -34,14 +34,14 @@ import static org.hao.compiler.websocket.terminal.TerminalWSUtil.*;
  * @since 2025/7/9 11:56
  */
 @Component
-@ServerEndpoint(value = "/terminalWS/{SessionId}") //, configurator = WsConfigurator.class 此注解相当于设置访问URL
+@ServerEndpoint(value = "/terminalWS/ip/{projectId}") //, configurator = WsConfigurator.class 此注解相当于设置访问URL
 @Slf4j
-public class TerminalWSHandler {
+public class TerminalIPWSHandler {
     private Session session;
     private Thread outputThread;
     private String clientIpAddress;
 
-    private static final ConcurrentHashMap<String, CopyOnWriteArraySet<TerminalWSHandler>> sessions = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, CopyOnWriteArraySet<TerminalIPWSHandler>> sessions = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, PtyProcess> shellProcess = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, StringBuffer> passwordBuffer = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, Boolean> authorizedOrNot = new ConcurrentHashMap<>();
@@ -51,17 +51,17 @@ public class TerminalWSHandler {
     @OnOpen
     @SneakyThrows
     public void onOpen(Session session,
-                       @PathParam(value = "SessionId") String SessionId) {
+                       @PathParam(value = "projectId") String projectId) {
 
         this.session = session;
         List<String> allIP = IPUtils.allIP;
         ObjectPrincipal<Map<String, Object>> userPrincipal = (ObjectPrincipal) session.getUserPrincipal();
         clientIpAddress = userPrincipal.getObject().get("ipAddr").toString();
 
-        CopyOnWriteArraySet<TerminalWSHandler> terminalWSHandlers = sessions.computeIfAbsent(clientIpAddress, k -> new CopyOnWriteArraySet<>());
-        terminalWSHandlers.add(this);
+        CopyOnWriteArraySet<TerminalIPWSHandler> terminalIPWSHandlers = sessions.computeIfAbsent(clientIpAddress, k -> new CopyOnWriteArraySet<>());
+        terminalIPWSHandlers.add(this);
         int countSum = sessions.values().stream().mapToInt(Set::size).sum();
-        int clientIpSum = terminalWSHandlers.size();
+        int clientIpSum = terminalIPWSHandlers.size();
         log.info("有新的链接进入,当前 {} 链接总会话: {}, 当前访问ip [{}] 会话数量: {}", this.getClass().getSimpleName(), countSum, clientIpAddress, clientIpSum);
 
         if (allIP.contains(clientIpAddress) || isLoopbackAddress(clientIpAddress)) {//
@@ -123,14 +123,14 @@ public class TerminalWSHandler {
 
     // 发送数据到前端
     private void sendToClient(String message) {
-        CopyOnWriteArraySet<TerminalWSHandler> terminalWSHandlers = sessions.get(clientIpAddress);
+        CopyOnWriteArraySet<TerminalIPWSHandler> terminalIPWSHandlers = sessions.get(clientIpAddress);
         if (!authorizedOrNot.computeIfAbsent(clientIpAddress, k -> false)) {
             //存储100条历史消息
             MessageHistory messageHistory = lastMessage.computeIfAbsent(clientIpAddress, k -> new MessageHistory(100));
             messageHistory.addMessage(message);
         }
-        for (TerminalWSHandler terminalWSHandler : terminalWSHandlers) {
-            terminalWSHandler.sendMessage(message);
+        for (TerminalIPWSHandler terminalIPWSHandler : terminalIPWSHandlers) {
+            terminalIPWSHandler.sendMessage(message);
         }
     }
 
@@ -149,13 +149,13 @@ public class TerminalWSHandler {
         close(this, clientIpAddress);
     }
 
-    private static synchronized void close(TerminalWSHandler terminalWSHandler, String clientIpAddress) {
-        CopyOnWriteArraySet<TerminalWSHandler> terminalWSHandlers = sessions.computeIfAbsent(clientIpAddress, k -> new CopyOnWriteArraySet<>());
-        terminalWSHandlers.remove(terminalWSHandler);
+    private static synchronized void close(TerminalIPWSHandler terminalIPWSHandler, String clientIpAddress) {
+        CopyOnWriteArraySet<TerminalIPWSHandler> terminalIPWSHandlers = sessions.computeIfAbsent(clientIpAddress, k -> new CopyOnWriteArraySet<>());
+        terminalIPWSHandlers.remove(terminalIPWSHandler);
         int countSum = sessions.values().stream().mapToInt(Set::size).sum();
-        int clientIpSum = terminalWSHandlers.size();
-        log.info("ip [{}] 的链接退出,当前 {} 链接总会话: {}, 当前退出ip会话数量: {}", clientIpAddress, terminalWSHandler.getClass().getSimpleName(), countSum, clientIpSum);
-        if (terminalWSHandlers.isEmpty()) {
+        int clientIpSum = terminalIPWSHandlers.size();
+        log.info("ip [{}] 的链接退出,当前 {} 链接总会话: {}, 当前退出ip会话数量: {}", clientIpAddress, terminalIPWSHandler.getClass().getSimpleName(), countSum, clientIpSum);
+        if (terminalIPWSHandlers.isEmpty()) {
             PtyProcess ptyProcess = shellProcess.get(clientIpAddress);
             if (ptyProcess != null && ptyProcess.isAlive()) {
                 ptyProcess.destroyForcibly();

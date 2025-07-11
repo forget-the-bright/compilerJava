@@ -40,6 +40,10 @@ public class MessageHistory {
         return history;
     }
 
+    public Boolean isEmpty() {
+        return history.isEmpty();
+    }
+
     public void consumerMessage(Consumer<String> consumer) {
         for (String message : history) {
             consumer.accept(message);

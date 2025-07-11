@@ -11,11 +11,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 /**
  * TODO
@@ -44,6 +42,7 @@ public class JavaRunProcess {
     private void buildCommand(String commandStr) {
         options.add(commandStr);
         command.append(commandStr.length() > 50 ? commandStr.substring(0, 50) + "..." : commandStr).append(" ");
+//        command.append(commandStr).append(" ");
     }
 
     @SneakyThrows

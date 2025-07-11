@@ -91,7 +91,7 @@
         });
         // 开启控制台交互
         const serializeAddon = new xterm.SerializeAddon();
-        terminalTerm.loadAddon(serializeAddon);
+      //  terminalTerm.loadAddon(serializeAddon);
         connectionTerminalWS(terminalTerm);
         // 初始化右键菜单（绑定到所有 .context-menu-target 元素）
         $.contextMenu({
@@ -120,12 +120,9 @@
 
             }
         });
-
-
         function resizeWsTerminal() {
             const val = terminalTermFitAddon.proposeDimensions(); // 获取推荐的尺寸
             if (!val) return;
-
             const cols = val.cols;
             const rows = val.rows;
             // console.log("proposeDimensions:", cols, rows)

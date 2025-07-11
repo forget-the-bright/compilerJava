@@ -549,7 +549,7 @@ function fillEditorFileContent(ProjectResourceId) {
 function connectionTerminalWS(terminalTerm) {
     // 清空终端
     terminalTerm.clear();
-    const socket = new WebSocket(`${window.wsUrl}/terminalWS/${window.SessionId}`);
+    const socket = new WebSocket(`${window.wsUrl}/terminalWS/project_ip/${window.projectId}`);
     window.socket = socket;
     socket.onclose = function () {
         $("#termianl-title").attr('class', 'fas fa-unlink');
