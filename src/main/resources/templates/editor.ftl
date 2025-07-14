@@ -179,6 +179,10 @@
             resultWindowTerm.clear();
             logWindowTerm.clear();
         });
+        // 运行终止按钮事件
+        $('#terminationBtn').click(() => {
+            compileProjectDestory();
+        })
     </script>
 </#noparse>
 </body>

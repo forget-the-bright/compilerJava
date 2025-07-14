@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.hao.compiler.sse.SseUtil;
+import org.hao.compiler.util.CompilerLocal;
 import org.hao.compiler.websocket.terminal.TerminalWSUtil;
 import org.hao.core.compiler.CompilerUtil;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -106,11 +107,29 @@ public class JavaRunProcess {
         SseUtil.sendMegBase64Ln(emitter, TerminalWSUtil.newline);
         SseUtil.sendMegBase64Ln(emitter, "执行完毕！");
         emitter.complete();
+        CompilerLocal.clearJavaRunProcess(this);
         if (process != null) {
             process.destroy();
         }
         if (outputThread != null) {
             outputThread.interrupt();
+        }
+    }
+
+    public void destroy() {
+        if (process != null && process.isAlive()) {
+            //这个方法会请求操作系统终止对应的子进程。但请注意，这是一个异步操作，并不保证立即完成。
+            process.destroy(); // 请求终止进程
+            // 如果进程没有响应普通的 destroy() 命令，你可以在 Java 8 及以上版本中使用 destroyForcibly();
+            // process.destroyForcibly(); // 强制终止进程
+        }
+    }
+    public void destroyForcibly() {
+        if (process != null && process.isAlive()) {
+            //这个方法会请求操作系统终止对应的子进程。但请注意，这是一个异步操作，并不保证立即完成。
+            //process.destroy(); // 请求终止进程
+            // 如果进程没有响应普通的 destroy() 命令，你可以在 Java 8 及以上版本中使用 destroyForcibly();
+             process.destroyForcibly(); // 强制终止进程
         }
     }
 }

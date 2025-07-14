@@ -438,9 +438,9 @@ function base64ToUtf8(base64) {
     }).join(''));
 }
 
-function activateTabByTitle(titleToFind,layout) {
+function activateTabByTitle(titleToFind, layout) {
     // 假设你有一个组件的 reference
-    const componentItem = layout.root.getItemsByFilter(function(item) {
+    const componentItem = layout.root.getItemsByFilter(function (item) {
         return item.type === 'component' && item.componentName === titleToFind;
     })[0];
     console.log('componentItem', componentItem)
@@ -514,10 +514,13 @@ function compileCurrentCode(resultWindowTerm) {
 function compileProjectCode(resultWindowTerm, docmentId, interfaceAddress) {
     saveEditorFile(true, () => {
         let projectId = window.projectId;
-        var eventSource = new EventSource(`${window.baseUrl}/${interfaceAddress}/sse?projectId=${projectId}`, {
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+        var eventSource = new EventSource(
+            `${window.baseUrl}/${interfaceAddress}/sse?projectId=${projectId}&SessionId=${window.SessionId}`, {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
         });
-        if (interfaceAddress.indexOf("Local") !== -1){
+        if (interfaceAddress.indexOf("Local") !== -1) {
             $('#terminationBtn').attr("style", '');
         }
         $(`${docmentId}`).prop("disabled", true);
@@ -530,7 +533,7 @@ function compileProjectCode(resultWindowTerm, docmentId, interfaceAddress) {
             eventSource.close();
             console.log('compileProject eventSource is error close ');
             $(`${docmentId}`).prop("disabled", false);
-            if (interfaceAddress.indexOf("Local") !== -1){
+            if (interfaceAddress.indexOf("Local") !== -1) {
                 $('#terminationBtn').attr("style", 'display: none;');
             }
         };
@@ -572,6 +575,27 @@ function connectionTerminalWS(terminalTerm) {
     };
     const attachAddon = new xterm.AttachAddon(socket);
     terminalTerm.loadAddon(attachAddon);
+}
+
+// 销毁编译项目
+function compileProjectDestory() {
+    // 使用 fetch 发送 POST 请求
+    fetch(`${window.baseUrl}/compileProjectLocal/stop?SessionId=${window.SessionId}`, {
+        method: 'GET', // 指定请求方法为 POST
+        headers: {
+            'Content-Type': 'application/json', // 设置请求头，表明请求体是 JSON 格式
+            // 如果需要身份验证或其他类型的头信息，可以在这里添加
+            // 'Authorization': 'Bearer your-token'
+        },
+    }).then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok ' + response.statusText);
+        }
+        return response.json(); // 解析 JSON 格式的响应
+    }).then(data => {
+        console.log("销毁编译项目执行成功", data)
+    }) // 成功处理响应数据
+        .catch(error => console.error('There was a problem with the fetch operation:', error));
 }
 
 //endregion

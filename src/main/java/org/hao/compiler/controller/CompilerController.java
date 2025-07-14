@@ -11,6 +11,7 @@ import org.hao.compiler.process.JavaRunProcess;
 import org.hao.compiler.service.ProjectService;
 import org.hao.compiler.sse.SseEmitterWriter;
 import org.hao.compiler.sse.SseUtil;
+import org.hao.compiler.util.CompilerLocal;
 import org.hao.core.compiler.CompilerUtil;
 import org.hao.core.compiler.InMemoryClassLoader;
 import org.hao.core.ip.IPUtils;
@@ -157,7 +158,7 @@ public class CompilerController {
     @Operation(summary = "编译项目代码本地SSE")
     @GetMapping("/compileProjectLocal/sse")
     @ResponseBody
-    public SseEmitter compileProjectLocalSse(@RequestParam String projectId) {
+    public SseEmitter compileProjectLocalSse(@RequestParam String projectId, @RequestParam(required = false) String SessionId) {
         SseEmitter emitter = new SseEmitter();
         new Thread(() -> {
             try {
@@ -188,16 +189,32 @@ public class CompilerController {
                 //todo 调用本地控制台监听
                 String mainClass = projectById.getMainClass();
                 JavaRunProcess javaRunProcess = new JavaRunProcess(outPutDir, mainClass, emitter);
+
+                CompilerLocal.setSessionId(SessionId, javaRunProcess);
+                emitter.onCompletion(() -> {
+                    javaRunProcess.destroyForcibly();
+                });
                 javaRunProcess.run();
             } catch (Exception e) {
                 try {
                     SseUtil.sendMegBase64Ln(emitter, "编译异常：" + e.getMessage() + "");
-                } catch (IOException ignored) {
+                } catch (Exception exception) {
                 }
                 e.printStackTrace();
                 emitter.complete();
+                CompilerLocal.clearSessionId(SessionId);
             }
         }).start();
         return emitter;
     }
+
+    @Operation(summary = "编译项目代码本地SSE")
+    @GetMapping("/compileProjectLocal/stop")
+    @ResponseBody
+    public void compileProjectLocalStop(@RequestParam String SessionId) {
+        JavaRunProcess sessionId = CompilerLocal.getSessionId(SessionId);
+        if (sessionId == null) return;
+        sessionId.destroy();
+    }
+
 } 
