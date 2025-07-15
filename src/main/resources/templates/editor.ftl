@@ -34,8 +34,8 @@
         <button id="saveFile">保存文件</button>
     </div>
     <div class="center-group">
-        <button id="compileProjectLocalSseBtn" class="fas fa-play" >&nbsp;启动</button>
-        <button id="terminationBtn"  class="fas fa-stop" style="display: none;">&nbsp;终止</button>
+        <button id="compileProjectLocalSseBtn" class="fas fa-play">&nbsp;启动</button>
+        <button id="terminationBtn" class="fas fa-stop" style="display: none;">&nbsp;终止</button>
     </div>
     <div class="right-group">
 
@@ -46,6 +46,7 @@
 
 <!-- jsTree 脚本 -->
 <#--<script src="${domainUrl}/js/xterm-addon-clipboard.js"></script>-->
+<script src="https://cdn.jsdelivr.net/npm/event-source-polyfill@1.0.31/src/eventsource.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/jstree.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery-contextmenu@2.9.2/dist/jquery.contextMenu.min.js"></script>
@@ -63,7 +64,10 @@
         import {AttachAddon} from 'https://esm.sh/xterm-addon-attach@latest';
         import {SerializeAddon} from 'https://esm.sh/xterm-addon-serialize@latest';
 
+        const EventSource = EventSourcePolyfill;
+        window.EventSource = EventSource;
         window.xterm = {Terminal, FitAddon, WebLinksAddon, AttachAddon, SerializeAddon};
+
         var editor, layout;
         // 初始化布局
         layout = new GoldenLayout(GoldenConfig, '#layout-container');
@@ -150,12 +154,22 @@
         }
 
         // 将 SSE 日志写入终端
-        var logSource = new EventSource(`${window.baseUrl}/log/stream?sessionId=${window.SessionId}`);
+        var logSource = new EventSource(`${window.baseUrl}/log/stream?sessionId=${window.SessionId}`, {
+            headers: {
+                'X-Custom-Header': 'value'
+            }
+        });
         logSource.onmessage = function (e) {
             let message = e.data;
             message = base64ToUtf8(message);
             logWindowTerm.write(message);
         };
+        // var logSource = new EventSource(`${window.baseUrl}/log/stream?sessionId=${window.SessionId}`);
+        // logSource.addEventListener('message', function (e) {
+        //     let message = e.data;
+        //     message = base64ToUtf8(message);
+        //     logWindowTerm.write(message);
+        // });
 
         //保存文件按钮事件
         $('#saveFile').click(() => saveEditorFile(true));

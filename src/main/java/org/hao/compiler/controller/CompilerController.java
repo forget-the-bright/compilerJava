@@ -1,5 +1,6 @@
 package org.hao.compiler.controller;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -19,6 +20,7 @@ import org.hao.core.compiler.InMemoryClassLoader;
 import org.hao.core.ip.IPUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.web.servlet.ModelAndView;
@@ -62,6 +64,36 @@ public class CompilerController {
         modelAndView.addObject("SessionId", UUID.randomUUID().toString());
         modelAndView.addObject("wsUrl", IPUtils.getBaseUrl().replace("http://", "ws://"));
         return modelAndView;
+    }
+
+    @Operation(summary = "首页")
+    @GetMapping("/login")
+    public ModelAndView login() {
+        ModelAndView modelAndView = new ModelAndView("login");
+        modelAndView.addObject("title", "在线 Java 编译器");
+        modelAndView.addObject("domainUrl", IPUtils.getBaseUrl());
+        modelAndView.addObject("wsUrl", IPUtils.getBaseUrl().replace("http://", "ws://"));
+        return modelAndView;
+    }
+
+    @PostMapping("/login")
+    public String handleLogin(
+            @RequestParam String username,
+            @RequestParam String password,
+            Model model) {
+
+        if (!"wanghao".equals(username) || !"ks125930.".equals(password)) {
+            model.addAttribute("error", "用户名或密码错误");
+            model.addAttribute("title", "在线 Java 编译器");
+            model.addAttribute("domainUrl", IPUtils.getBaseUrl());
+            model.addAttribute("wsUrl", IPUtils.getBaseUrl().replace("http://", "ws://"));
+            return "login"; // 返回登录模板，并显示错误
+        }
+        StpUtil.logout();
+        // 第二步：根据账号id，进行登录
+        StpUtil.login(10001);
+        // 登录成功，跳转主页
+        return "redirect:/";
     }
 
     @Operation(summary = "编译代码SSE")

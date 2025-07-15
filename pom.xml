@@ -167,6 +167,14 @@
             <artifactId>pty4j</artifactId>
             <version>${pty4j.version}</version>
         </dependency>
+
+        <!-- Sa-Token 权限认证，在线文档：https://sa-token.cc -->
+        <dependency>
+            <groupId>cn.dev33</groupId>
+            <artifactId>sa-token-spring-boot-starter</artifactId>
+            <version>1.44.0</version>
+        </dependency>
+
     </dependencies>
     <build>
         <plugins>
