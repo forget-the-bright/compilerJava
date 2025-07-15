@@ -1,6 +1,6 @@
 ${packageName}
 
-import org.hao.core.print.PrintUtil;
+import org.hao.core.print.*;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

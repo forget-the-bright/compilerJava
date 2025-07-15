@@ -512,6 +512,7 @@ function compileCurrentCode(resultWindowTerm) {
 
 // 编译项目代码
 function compileProjectCode(resultWindowTerm, docmentId, interfaceAddress) {
+    resultWindowTerm.clear();
     saveEditorFile(true, () => {
         let projectId = window.projectId;
         var eventSource = new EventSource(

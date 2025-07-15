@@ -1,11 +1,13 @@
 package org.hao.compiler.controller;
 
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.hao.compiler.entity.Project;
 import org.hao.compiler.process.JavaRunProcess;
 import org.hao.compiler.service.ProjectService;
@@ -27,6 +29,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Tag(name = "在线 Java 编译器")
 @Controller
 public class CompilerController {
@@ -160,25 +163,38 @@ public class CompilerController {
     @ResponseBody
     public SseEmitter compileProjectLocalSse(@RequestParam String projectId, @RequestParam(required = false) String SessionId) {
         SseEmitter emitter = new SseEmitter();
-        new Thread(() -> {
+        ThreadUtil.execAsync(() -> {
             try {
+                SseUtil.sendMegBase64Ln(emitter, "正在校验编译输入信息...");
                 if (StrUtil.isEmpty(projectId)) {
-                    SseUtil.sendMegBase64Ln(emitter, "代码不能为空,请输入代码！");
+                    SseUtil.sendMegBase64Ln(emitter, "项目id不能为空,请输入代码！");
                     return;
                 }
                 Project projectById = projectService.getProjectById(Long.parseLong(projectId));
                 if (projectById == null) {
-                    SseUtil.sendMegBase64Ln(emitter, "项目不存在！");
+                    SseUtil.sendMegBase64Ln(emitter, "项目id对应的不存在！");
                     return;
                 }
                 if (StrUtil.isEmpty(projectById.getMainClass())) {
-                    SseUtil.sendMegBase64Ln(emitter, "项目没有主类！");
+                    SseUtil.sendMegBase64Ln(emitter, "项目没有设置主类！");
                     return;
                 }
+                SseUtil.sendMegBase64Ln(emitter, "编译相关信息初始化...");
+                //编译信息初始化。
+                String outPutDir = StrUtil.format("./compile_output/project_{}/", projectId);
+                String mainClass = projectById.getMainClass();
+                JavaRunProcess javaRunProcess = new JavaRunProcess(outPutDir, mainClass, emitter);
+                CompilerLocal.setSessionId(SessionId, javaRunProcess);
+                emitter.onCompletion(() -> {
+                    javaRunProcess.destroyForcibly();
+                    CompilerLocal.clearSessionId(SessionId);
+                });
+                SseUtil.sendMegBase64Ln(emitter, "编译准备,获取项目源代码...");
+                //编译准备,获取项目源代码
                 SseEmitterWriter sseEmitterWriter = new SseEmitterWriter(emitter);
                 List<String> contents = projectService.getProjectSourceContentsByProjectId(Long.parseLong(projectId));
-                SseUtil.sendMegBase64Ln(emitter, "正在编译...");
-                String outPutDir = StrUtil.format("./compile_output/project_{}/", projectId);
+                SseUtil.sendMegBase64Ln(emitter, "执行编译,编译中...");
+                //执行编译
                 CompilerUtil.compileToLocalFile(
                         outPutDir,
                         sseEmitterWriter,
@@ -186,25 +202,18 @@ public class CompilerController {
                                 .stream()
                                 .filter(code -> StrUtil.isNotEmpty(code)).toArray(String[]::new));
                 SseUtil.sendMegBase64Ln(emitter, "编译成功,开始执行...");
-                //todo 调用本地控制台监听
-                String mainClass = projectById.getMainClass();
-                JavaRunProcess javaRunProcess = new JavaRunProcess(outPutDir, mainClass, emitter);
-
-                CompilerLocal.setSessionId(SessionId, javaRunProcess);
-                emitter.onCompletion(() -> {
-                    javaRunProcess.destroyForcibly();
-                });
+                //执行运行编译结果class
                 javaRunProcess.run();
             } catch (Exception e) {
                 try {
                     SseUtil.sendMegBase64Ln(emitter, "编译异常：" + e.getMessage() + "");
                 } catch (Exception exception) {
                 }
-                e.printStackTrace();
+                log.error("编译异常", e);
                 emitter.complete();
                 CompilerLocal.clearSessionId(SessionId);
             }
-        }).start();
+        }, true);
         return emitter;
     }
 
@@ -214,7 +223,7 @@ public class CompilerController {
     public void compileProjectLocalStop(@RequestParam String SessionId) {
         JavaRunProcess sessionId = CompilerLocal.getSessionId(SessionId);
         if (sessionId == null) return;
-        sessionId.destroy();
+        sessionId.dynamicDestory();
     }
 
 } 

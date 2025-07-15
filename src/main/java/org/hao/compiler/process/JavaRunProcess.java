@@ -7,6 +7,7 @@ import org.hao.compiler.sse.SseUtil;
 import org.hao.compiler.util.CompilerLocal;
 import org.hao.compiler.websocket.terminal.TerminalWSUtil;
 import org.hao.core.compiler.CompilerUtil;
+import org.hao.core.print.PrintUtil;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.File;
@@ -81,6 +82,7 @@ public class JavaRunProcess {
         // 读取 Shell 输出流并发送给前端
         //readOutput();
         outputThread = new Thread(this::readOutput);
+        outputThread.setDaemon(true); // 设置为守护线程
         outputThread.start();
     }
 
@@ -105,7 +107,7 @@ public class JavaRunProcess {
     @SneakyThrows
     private void stop() {
         SseUtil.sendMegBase64Ln(emitter, TerminalWSUtil.newline);
-        SseUtil.sendMegBase64Ln(emitter, "执行完毕！");
+        SseUtil.sendMegBase64Ln(emitter, PrintUtil.BLUE.getColorStr("运行结束,程序退出!!!"));
         emitter.complete();
         CompilerLocal.clearJavaRunProcess(this);
         if (process != null) {
@@ -113,6 +115,25 @@ public class JavaRunProcess {
         }
         if (outputThread != null) {
             outputThread.interrupt();
+        }
+    }
+
+    // 动态销毁标识,默认false 执行默认销毁,程序自己退出,否则执行强制销毁
+    private volatile boolean isExecDestory = false;
+
+    @SneakyThrows
+    public synchronized void dynamicDestory() {
+        if (process != null && process.isAlive()) {
+            if (!isExecDestory) {
+                //这个方法会请求操作系统终止对应的子进程。但请注意，这是一个异步操作，并不保证立即完成。
+                SseUtil.sendMegBase64(emitter, PrintUtil.BLUE.getColorStr("已向进程发送退出指令"));
+                process.destroy(); // 请求终止进程
+                isExecDestory = true;
+            } else {
+                // 如果进程没有响应普通的 destroy() 命令，你可以在 Java 8 及以上版本中使用 destroyForcibly();
+                SseUtil.sendMegBase64(emitter, PrintUtil.BLUE.getColorStr("已向进程发送强制退出指令"));
+                process.destroyForcibly(); // 强制终止进程
+            }
         }
     }
 
@@ -124,12 +145,13 @@ public class JavaRunProcess {
             // process.destroyForcibly(); // 强制终止进程
         }
     }
+
     public void destroyForcibly() {
         if (process != null && process.isAlive()) {
             //这个方法会请求操作系统终止对应的子进程。但请注意，这是一个异步操作，并不保证立即完成。
             //process.destroy(); // 请求终止进程
             // 如果进程没有响应普通的 destroy() 命令，你可以在 Java 8 及以上版本中使用 destroyForcibly();
-             process.destroyForcibly(); // 强制终止进程
+            process.destroyForcibly(); // 强制终止进程
         }
     }
 }
