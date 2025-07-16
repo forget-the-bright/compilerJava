@@ -13,7 +13,6 @@ public class AuthInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         HttpSession session = request.getSession(false); // 获取session，如果不存在则返回null
-
         try {
             SaTokenContextServletUtil.setContext((HttpServletRequest) request, (HttpServletResponse) response);
             if (!StpUtil.isLogin()) {
@@ -22,7 +21,7 @@ public class AuthInterceptor implements HandlerInterceptor {
                 return false;
             }
         } finally {
-            SaTokenContextServletUtil.clearContext();
+          //  SaTokenContextServletUtil.clearContext();
         }
         return true; // 已登录，继续处理请求
     }

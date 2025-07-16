@@ -21,7 +21,9 @@
         <button type="button" class="btn btn-primary" onclick="editOrCreateProject()">创建项目</button>
     </div>
     <div>
-        <span>项目总数: <span id="projectCount">${projectSize}</span></span>
+        <span>项目总数: <span id="projectCount">${projectSize} &nbsp;</span></span>
+        <span class="mx-3">用户名: <span id="username">${username!""}</span></span>
+        <button type="button" class="btn btn-danger" onclick="logout()">退出登录</button>
     </div>
 </div>
 <div class="content-container">
@@ -220,7 +222,20 @@
             }
             return obj;
         }
-
+        function  logout(){
+            $.ajax({
+                url: `${window.baseUrl}/logout`,
+                method: 'POST',
+                success: function (response) {
+                    console.log('成功:', response);
+                    window.location.href = `${window.baseUrl}/login`;
+                },
+                error: function (error) {
+                    console.error('错误:', error);
+                   // window.location.href = `${window.baseUrl}/login`;
+                }
+            });
+        }
         //window.addEventListener('resize', renderProjects);
     </script>
 </#noparse>

@@ -11,7 +11,7 @@
     <div>
         <h1 class="display-4 text-danger">500 - Internal Server Error</h1>
         <p class="lead">服务器发生错误，请稍后再试。</p>
-        <a href="/" class="btn btn-primary mt-3">返回首页</a>
+        <a href="${domainUrl}/" class="btn btn-primary mt-3">返回首页</a>
     </div>
 </div>
 

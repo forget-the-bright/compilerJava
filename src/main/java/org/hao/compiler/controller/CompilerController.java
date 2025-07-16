@@ -66,22 +66,29 @@ public class CompilerController {
         return modelAndView;
     }
 
-    @Operation(summary = "首页")
+    @Operation(summary = "登录页面")
     @GetMapping("/login")
     public ModelAndView login() {
+        if (StpUtil.isLogin()) {
+            ModelAndView modelAndView = new ModelAndView("redirect:/");
+            return modelAndView;
+        }
         ModelAndView modelAndView = new ModelAndView("login");
         modelAndView.addObject("title", "在线 Java 编译器");
         modelAndView.addObject("domainUrl", IPUtils.getBaseUrl());
         modelAndView.addObject("wsUrl", IPUtils.getBaseUrl().replace("http://", "ws://"));
         return modelAndView;
     }
-
+    @Operation(summary = "登录")
     @PostMapping("/login")
     public String handleLogin(
             @RequestParam String username,
             @RequestParam String password,
             Model model) {
 
+        if (StpUtil.isLogin()) {
+            return "redirect:/";
+        }
         if (!"wanghao".equals(username) || !"ks125930.".equals(password)) {
             model.addAttribute("error", "用户名或密码错误");
             model.addAttribute("title", "在线 Java 编译器");
@@ -89,10 +96,17 @@ public class CompilerController {
             model.addAttribute("wsUrl", IPUtils.getBaseUrl().replace("http://", "ws://"));
             return "login"; // 返回登录模板，并显示错误
         }
-        StpUtil.logout();
         // 第二步：根据账号id，进行登录
         StpUtil.login(10001);
         // 登录成功，跳转主页
+        return "redirect:/";
+    }
+    @Operation(summary = "登出")
+    @PostMapping("/logout")
+    public String handleLogin() {
+        if (StpUtil.isLogin()) {
+            StpUtil.logout();
+        }
         return "redirect:/";
     }
 

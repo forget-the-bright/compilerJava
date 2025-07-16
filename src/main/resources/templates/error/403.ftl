@@ -11,7 +11,7 @@
     <div>
         <h1 class="display-4 text-danger">403 - Forbidden</h1>
         <p class="lead">抱歉，您没有权限访问此页面。</p>
-        <a href="/" class="btn btn-primary mt-3">返回首页</a>
+        <a href="${domainUrl}/login" class="btn btn-primary mt-3">返回首页</a>
     </div>
 </div>
 
