@@ -44,7 +44,8 @@
                            onclick="enterProject(${project.id})" value="进入项目"/>
                     <input type="button" class="btn btn-primary d-inline" data-bs-toggle="modal"
                            onclick="editOrCreateProject(${project.id})" value="修改项目"/>
-                    <input type="button" class="btn btn-danger d-inline" onclick="deleteProject(${project.id})" value="删除项目"/>
+                    <input type="button" class="btn btn-danger d-inline" onclick="deleteProject(${project.id})"
+                           value="删除项目"/>
                 </div>
             </div>
         </#list>
@@ -77,11 +78,11 @@
                     </div>
 
                     <!-- 标题 -->
-                    <div class="mb-3">
-                        <label for="creator" class="form-label">创建者</label>
-                        <input type="text" class="form-control" id="creator" name="creator" required>
-                    </div>
-
+                    <#--                 <div class="mb-3">
+                                         <label for="creator" class="form-label">创建者</label>
+                                         <input type="text" class="form-control" id="creator" name="creator" required>
+                                     </div>
+                 -->
                     <!-- 描述 -->
                     <div class="mb-3">
                         <label for="description" class="form-label">描述</label>
@@ -112,10 +113,10 @@
         var myModal = new bootstrap.Modal(document.getElementById('exampleModal'), options)
 
         function deleteProject(projectId) {
-            if (!projectId){
+            if (!projectId) {
                 return;
             }
-            if (projectId == 1){
+            if (projectId == 1) {
                 alert("默认项目不能删除");
                 return;
             }
@@ -135,7 +136,21 @@
 
         function enterProject(projectId) {
             if (!projectId) return;
-            window.location.href = `${window.baseUrl}/editor?projectId=${projectId}`;
+          //  window.location.href = `${window.baseUrl}/editor?projectId=${projectId}`;
+
+            const form = $('<form>', {
+                method: 'POST',
+                action: `${window.baseUrl}/editor`,
+                style: 'display:none;'
+            });
+
+            $('<input>').attr({
+                type: 'hidden',
+                name: 'projectId',
+                value: `${projectId}`
+            }).appendTo(form);
+
+            form.appendTo('body').submit();
         }
 
         function editOrCreateProject(projectId) {
@@ -147,7 +162,7 @@
             let id = dataForm.find('input[name="id"]').first();
             let name = dataForm.find('input[name="name"]').first();
             let mainClass = dataForm.find('input[name="mainClass"]').first();
-            let creator = dataForm.find('input[name="creator"]').first();
+            // let creator = dataForm.find('input[name="creator"]').first();
             if (projectId) {
                 title = "修改项目"
                 $.ajax({
@@ -162,7 +177,7 @@
                         id.val(response.id);
                         name.val(response.name);
                         mainClass.val(response.mainClass);
-                        creator.val(response.creator);
+                        // creator.val(response.creator);
                         // 更新模态框内容
                         modalTitle.text(title);
                         dataForm.attr('action', `${window.baseUrl}/projects/${projectId}/updateProject`)
@@ -179,7 +194,7 @@
                 id.val('');
                 name.val('');
                 mainClass.val('');
-                creator.val('');
+                // creator.val('');
                 dataForm.attr('action', `${window.baseUrl}/projects`)
                 dataForm.attr('method', 'POST')
 
@@ -190,7 +205,6 @@
 
 
         }
-
 
 
         $('#dataForm').on('submit', function (event) {
@@ -222,7 +236,8 @@
             }
             return obj;
         }
-        function  logout(){
+
+        function logout() {
             $.ajax({
                 url: `${window.baseUrl}/logout`,
                 method: 'POST',
@@ -232,10 +247,11 @@
                 },
                 error: function (error) {
                     console.error('错误:', error);
-                   // window.location.href = `${window.baseUrl}/login`;
+                    // window.location.href = `${window.baseUrl}/login`;
                 }
             });
         }
+
         //window.addEventListener('resize', renderProjects);
     </script>
 </#noparse>

@@ -52,4 +52,7 @@ public class Project extends Model<Project> {
 
     @TableField(value = "CREATOR")
     private String creator;
+
+    @TableField(value = "UPDATOR")
+    private String updator;
 }

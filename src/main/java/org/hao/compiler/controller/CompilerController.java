@@ -57,10 +57,16 @@ public class CompilerController {
     }
 
     @Operation(summary = "编辑器界面")
-    @GetMapping("/editor")
+    @PostMapping("/editor")
     public ModelAndView editor(@RequestParam String projectId) {
         ModelAndView modelAndView = new ModelAndView("editor");
         Project projectById = projectService.getProjectById(Convert.toLong(projectId));
+        if (projectById == null) {
+            throw new RuntimeException("项目ID无效");
+        }
+        if (!projectById.getCreator().equals(StpUtil.getLoginId())) {
+            throw new RuntimeException("当前用户访问没有权限");
+        }
         modelAndView.addObject("projectId", projectId);
         modelAndView.addObject("project", projectById);
         modelAndView.addObject("SessionId", UUID.randomUUID().toString());

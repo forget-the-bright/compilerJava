@@ -10,7 +10,7 @@
 <div class="container d-flex align-items-center justify-content-center min-vh-100 text-center">
     <div>
         <h1 class="display-4 text-danger">500 - Internal Server Error</h1>
-        <p class="lead">服务器发生错误，请稍后再试。</p>
+        <p class="lead">${errorMsg!"服务器发生错误，请稍后再试。"}</p>
         <a href="${domainUrl}/" class="btn btn-primary mt-3">返回首页</a>
     </div>
 </div>

@@ -1,5 +1,6 @@
 package org.hao.compiler.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -49,7 +50,7 @@ public class ProjectService {
     private final Configuration freeMarkerConfig;
     private final JdbcTemplate jdbcTemplate;
     private final ProjectResourceMapper resourceMapper;
-    private final  Formatter formatter = new Formatter(
+    private final Formatter formatter = new Formatter(
             JavaFormatterOptions.builder()
                     .style(JavaFormatterOptions.Style.AOSP)
                     .build());
@@ -77,7 +78,8 @@ public class ProjectService {
         project.setName(name);
         project.setMainClass(mainClass);
         project.setCreateTime(new Date());
-        project.setCreator(creator);
+//        project.setCreator(creator);
+        project.setCreator(StpUtil.getLoginId().toString());
         Db.save(project);
 
         // 将主类全限定名按点号分割，用于后续处理包路径和文件结构
@@ -166,9 +168,10 @@ public class ProjectService {
         // 更新项目的名称、主类路径和创建者信息
         byId.setName(dto.getName());
         byId.setMainClass(dto.getMainClass());
-        byId.setCreator(dto.getCreator());
+//        byId.setCreator(dto.getCreator());
 
         // 将更新后的项目信息持久化到数据库中
+        byId.setUpdator(StpUtil.getLoginId().toString());
         Db.updateById(byId);
 
         return byId;
@@ -199,7 +202,8 @@ public class ProjectService {
      */
     public List<Project> getProjects() {
         // 调用 Db.list 方法查询数据库中所有 Project 类型的记录，并返回结果列表。
-        return Db.list(Project.class);
+        Object loginId = StpUtil.getLoginId();
+        return Db.list(Wrappers.lambdaQuery(Project.class).eq(loginId != null, Project::getCreator, loginId));
     }
 
 
@@ -486,7 +490,7 @@ public class ProjectService {
         // 如果内容不为空，则进行格式化
         if (StrUtil.isNotEmpty(projectResource.getContent())) {
             // 创建Java代码格式化器
-           // Formatter formatter = new Formatter(JavaFormatterOptions.defaultOptions());
+            // Formatter formatter = new Formatter(JavaFormatterOptions.defaultOptions());
             // 格式化代码
             String formattedCode = formatter.formatSource(projectResource.getContent());
             // 更新资源内容为格式化后的代码
