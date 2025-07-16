@@ -11,7 +11,7 @@
     <div>
         <h1 class="display-4 text-warning">404 - Not Found</h1>
         <p class="lead">您请求的页面不存在，请检查地址是否正确。</p>
-        <a href="/" class="btn btn-primary mt-3">返回首页</a>
+        <a href="${domainUrl}/" class="btn btn-primary mt-3">返回首页</a>
     </div>
 </div>
 

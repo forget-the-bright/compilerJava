@@ -1,4 +1,4 @@
-package org.hao.compiler.service;
+package org.hao.compiler.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.lsp4j.*;

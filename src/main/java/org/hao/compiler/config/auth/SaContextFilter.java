@@ -1,4 +1,4 @@
-package org.hao.compiler.config;
+package org.hao.compiler.config.auth;
 
 import cn.dev33.satoken.servlet.util.SaTokenContextServletUtil;
 import org.springframework.stereotype.Component;

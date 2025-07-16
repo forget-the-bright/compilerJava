@@ -4,7 +4,7 @@ import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.websocket.WebSocketEndpoint;
-import org.hao.compiler.service.JavaLanguageServer;
+import org.hao.compiler.service.impl.JavaLanguageServer;
 
 /**
  * TODO
