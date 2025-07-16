@@ -25,6 +25,9 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             </#if>
+            <div class="mt-3 text-center">
+                <a href="${domainUrl}/register">没有账号？立即注册</a>
+            </div>
             <!-- 登录表单 -->
             <form action="${domainUrl}/login" method="post">
                 <div class="mb-3">

@@ -11,4 +11,8 @@ import org.hao.compiler.entity.User;
 
 
 public interface UserService extends IService<User> {
+    void register(String userName, String nickName, String email, String mobileNumber, String password);
+
+    User getUserByName(String username);
+    String hashPassword(String password, String salt);
 }

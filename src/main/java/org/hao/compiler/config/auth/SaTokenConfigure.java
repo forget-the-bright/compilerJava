@@ -17,7 +17,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
         registry
                 .addInterceptor(new AuthInterceptor())
                 .addPathPatterns("/**")
-                .excludePathPatterns("/login");
+                .excludePathPatterns("/login","/register");
     }
 }
 

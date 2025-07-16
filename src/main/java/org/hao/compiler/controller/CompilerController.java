@@ -9,8 +9,11 @@ import cn.hutool.core.util.StrUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
+import org.hao.annotation.LogDefine;
 import org.hao.compiler.entity.Project;
+import org.hao.compiler.entity.User;
 import org.hao.compiler.process.JavaRunProcess;
+import org.hao.compiler.service.UserService;
 import org.hao.compiler.service.impl.ProjectService;
 import org.hao.compiler.sse.SseEmitterWriter;
 import org.hao.compiler.sse.SseUtil;
@@ -38,14 +41,14 @@ public class CompilerController {
 
     @Autowired
     private ProjectService projectService;
+    @Autowired
+    private UserService userService;
+
 
     @Operation(summary = "首页")
     @GetMapping("/")
     public ModelAndView index() {
         ModelAndView modelAndView = new ModelAndView("index");
-        modelAndView.addObject("title", "在线 Java 编译器");
-        modelAndView.addObject("domainUrl", IPUtils.getBaseUrl());
-        modelAndView.addObject("wsUrl", IPUtils.getBaseUrl().replace("http://", "ws://"));
         List<Project> projects = projectService.getProjects();
         modelAndView.addObject("projects", projects);
         modelAndView.addObject("projectSize", projects.size());
@@ -56,13 +59,10 @@ public class CompilerController {
     @GetMapping("/editor")
     public ModelAndView editor(@RequestParam String projectId) {
         ModelAndView modelAndView = new ModelAndView("editor");
-        modelAndView.addObject("title", "在线 Java 编译器");
-        modelAndView.addObject("domainUrl", IPUtils.getBaseUrl());
         Project projectById = projectService.getProjectById(Convert.toLong(projectId));
         modelAndView.addObject("projectId", projectId);
         modelAndView.addObject("project", projectById);
         modelAndView.addObject("SessionId", UUID.randomUUID().toString());
-        modelAndView.addObject("wsUrl", IPUtils.getBaseUrl().replace("http://", "ws://"));
         return modelAndView;
     }
 
@@ -74,13 +74,12 @@ public class CompilerController {
             return modelAndView;
         }
         ModelAndView modelAndView = new ModelAndView("login");
-        modelAndView.addObject("title", "在线 Java 编译器");
-        modelAndView.addObject("domainUrl", IPUtils.getBaseUrl());
-        modelAndView.addObject("wsUrl", IPUtils.getBaseUrl().replace("http://", "ws://"));
         return modelAndView;
     }
+
     @Operation(summary = "登录")
     @PostMapping("/login")
+    @LogDefine(description = "用户登录")
     public String handleLogin(
             @RequestParam String username,
             @RequestParam String password,
@@ -89,18 +88,22 @@ public class CompilerController {
         if (StpUtil.isLogin()) {
             return "redirect:/";
         }
-        if (!"wanghao".equals(username) || !"ks125930.".equals(password)) {
-            model.addAttribute("error", "用户名或密码错误");
-            model.addAttribute("title", "在线 Java 编译器");
-            model.addAttribute("domainUrl", IPUtils.getBaseUrl());
-            model.addAttribute("wsUrl", IPUtils.getBaseUrl().replace("http://", "ws://"));
-            return "login"; // 返回登录模板，并显示错误
+        User user = userService.getUserByName(username);
+        if (user == null) {
+            model.addAttribute("error", "用户不存在");
+            return "login"; // 登录失败，返回登录页面
+        }
+        String hashPassword = userService.hashPassword(password, user.getPasswordSalt());
+        if (!hashPassword.equals(user.getPasswordHash())) {
+            model.addAttribute("error", "密码错误");
+            return "login"; // 登录失败，返回登录页面
         }
         // 第二步：根据账号id，进行登录
-        StpUtil.login(10001);
+        StpUtil.login(username);
         // 登录成功，跳转主页
         return "redirect:/";
     }
+
     @Operation(summary = "登出")
     @PostMapping("/logout")
     public String handleLogin() {
@@ -108,6 +111,47 @@ public class CompilerController {
             StpUtil.logout();
         }
         return "redirect:/";
+    }
+
+    @GetMapping("/register")
+    public ModelAndView handleRegister() {
+        if (StpUtil.isLogin()) {
+            ModelAndView modelAndView = new ModelAndView("redirect:/");
+            return modelAndView;
+        }
+        ModelAndView modelAndView = new ModelAndView("register");
+        return modelAndView;
+    }
+
+    @PostMapping("/register")
+    @LogDefine(description = "用户注册")
+    public String handleRegister(
+            @RequestParam("user_name") String userName,
+            @RequestParam("nick_name") String nickName,
+            @RequestParam("email") String email,
+            @RequestParam("mobile_number") String mobileNumber,
+            @RequestParam("password") String password,
+            @RequestParam("confirm_password") String confirmPassword,
+            Model model) {
+
+        if (!password.equals(confirmPassword)) {
+            model.addAttribute("error", "两次密码不一致");
+            return "register";
+        }
+
+        if (userName == null || userName.trim().isEmpty()) {
+            model.addAttribute("error", "用户名不能为空");
+            return "register";
+        }
+
+        try {
+            userService.register(userName, nickName, email, mobileNumber, password);
+        } catch (Exception e) {
+            model.addAttribute("error", "注册失败：" + e.getMessage());
+            return "register";
+        }
+
+        return "redirect:/login";
     }
 
     @Operation(summary = "编译代码SSE")

@@ -109,13 +109,13 @@ public class User extends Model<User> implements Serializable {
      * 账号状态：0禁用，1启用
      */
     @Schema(description = "账号状态：0禁用，1启用")
-    private Byte status;
+    private Integer status;
 
     /**
      * 是否删除：0未删，1已删
      */
     @Schema(description = "是否删除：0未删，1已删")
-    private Byte isDeleted;
+    private Integer isDeleted;
 
     /**
      * 创建人ID或用户名
