@@ -1,5 +1,6 @@
 package org.hao.compiler.config.ws;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.ReflectUtil;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.connector.RequestFacade;
@@ -23,6 +24,11 @@ public class WebSocketFilter implements Filter {
                 HashMap<String, Object> userPrincipal = new HashMap<>();
                 userPrincipal.put("ipAddr", ipAddr);
                 userPrincipal.put("username", "admin");
+                userPrincipal.put("user", null);
+                if (StpUtil.isLogin()) {
+                    userPrincipal.put("username", StpUtil.getLoginId());
+                    userPrincipal.put("user", StpUtil.getSession(true).get("user"));
+                }
                 request.setUserPrincipal(new ObjectPrincipal<Map<String, Object>>(userPrincipal));
             }
         }

@@ -267,6 +267,7 @@ public class CompilerController {
     @ResponseBody
     public SseEmitter compileProjectLocalSse(@RequestParam String projectId, @RequestParam(required = false) String SessionId) {
         SseEmitter emitter = new SseEmitter();
+        Object loginId = StpUtil.getLoginId();
         ThreadUtil.execAsync(() -> {
             try {
                 SseUtil.sendMegBase64Ln(emitter, "正在校验编译输入信息...");
@@ -285,7 +286,7 @@ public class CompilerController {
                 }
                 SseUtil.sendMegBase64Ln(emitter, "编译相关信息初始化...");
                 //编译信息初始化。
-                String outPutDir = StrUtil.format("./compile_output/project_{}/", projectId);
+                String outPutDir = StrUtil.format("./compile_output/{}/project_{}/",loginId, projectId);
                 String mainClass = projectById.getMainClass();
                 JavaRunProcess javaRunProcess = new JavaRunProcess(outPutDir, mainClass, emitter);
                 CompilerLocal.setSessionId(SessionId, javaRunProcess);
