@@ -68,12 +68,12 @@
 
                     <!-- 名称 -->
                     <div class="mb-3">
-                        <label for="name" class="form-label">名称 </label>
+                        <label for="name" class="form-label">项目名称 </label>
                         <input type="text" class="form-control" id="name" name="name" required>
                     </div>
                     <!-- 主类 -->
                     <div class="mb-3">
-                        <label for="mainClass" class="form-label">主类（分类）</label>
+                        <label for="mainClass" class="form-label">主类（全路径类名）</label>
                         <input type="text" class="form-control" id="mainClass" name="mainClass" required>
                     </div>
 
@@ -85,7 +85,7 @@
                  -->
                     <!-- 描述 -->
                     <div class="mb-3">
-                        <label for="description" class="form-label">描述</label>
+                        <label for="description" class="form-label">项目描述</label>
                         <textarea class="form-control" id="description" name="description" rows="3"></textarea>
                     </div>
                 </form>
