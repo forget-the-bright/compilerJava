@@ -93,7 +93,7 @@ public class ProjectService {
 
             // 如果是最后一段，则生成主类文件
             if (i == split.size()) {
-                Template template = freeMarkerConfig.getTemplate("java_main_template.ftl");
+                Template template = freeMarkerConfig.getTemplate("java/java_main_template.ftl");
 
                 // 使用 FreeMarker 渲染模板，生成主类文件内容
                 StringWriter stringWriter = new StringWriter();
@@ -301,7 +301,7 @@ public class ProjectService {
         String className = StrUtil.subBefore(fileName, ".", true);
 
         // 加载 FreeMarker 模板文件，并使用 StringWriter 接收渲染后的结果。
-        Template template = freeMarkerConfig.getTemplate("java_template.ftl");
+        Template template = freeMarkerConfig.getTemplate("java/java_template.ftl");
         StringWriter stringWriter = new StringWriter();
         Map<String, Object> data = new HashMap<>();
         data.put("packageName", packageName);
