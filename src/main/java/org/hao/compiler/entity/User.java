@@ -31,9 +31,9 @@ public class User extends Model<User> implements Serializable {
     /**
      * 用户ID，主键
      */
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     @Schema(description = "id")
-    private Long id;
+    private String id;
 
     /**
      * 用户名，唯一

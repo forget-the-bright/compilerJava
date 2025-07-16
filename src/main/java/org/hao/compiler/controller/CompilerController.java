@@ -31,6 +31,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -98,8 +99,15 @@ public class CompilerController {
             model.addAttribute("error", "密码错误");
             return "login"; // 登录失败，返回登录页面
         }
+        user.setLastLoginTime(new Date()).updateById();
         // 第二步：根据账号id，进行登录
-        StpUtil.login(username);
+        try {
+            StpUtil.login(username);
+        } catch (Exception e) {
+            model.addAttribute("error", e.getMessage());
+            return "login"; // 登录失败，返回登录页面
+        }
+        StpUtil.getSession(true).set("user", user);
         // 登录成功，跳转主页
         return "redirect:/";
     }

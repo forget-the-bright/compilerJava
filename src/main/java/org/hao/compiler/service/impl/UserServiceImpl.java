@@ -1,5 +1,6 @@
 package org.hao.compiler.service.impl;
 
+import cn.hutool.core.util.HashUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.hao.compiler.entity.User;
@@ -63,7 +64,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     // 使用 PBKDF2 对密码进行哈希加密
     public String hashPassword(String password, String salt) {
         try {
-            int iterations = 65536;
+            // 迭代次数
+            int iterations = 1000;
+            // 密钥长度
             int keyLength = 128;
             char[] chars = password.toCharArray();
             byte[] saltBytes = Base64.getDecoder().decode(salt);

@@ -22,7 +22,7 @@
     </div>
     <div>
         <span>项目总数: <span id="projectCount">${projectSize} &nbsp;</span></span>
-        <span class="mx-3">用户名: <span id="username">${username!""}</span></span>
+        <span class="mx-3">用户名: <span id="username">${nickname!""}</span></span>
         <button type="button" class="btn btn-danger" onclick="logout()">退出登录</button>
     </div>
 </div>

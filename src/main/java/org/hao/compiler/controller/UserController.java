@@ -54,14 +54,14 @@ public class UserController {
     // 查询单个用户
     @GetMapping("/{id}")
     @Operation(summary = "根据ID查询用户")
-    public User getUserById(@PathVariable Long id) {
+    public User getUserById(@PathVariable String id) {
         return userService.getById(id);
     }
 
     // 更新用户
     @PutMapping("/{id}")
     @Operation(summary = "根据ID更新用户")
-    public Boolean updateUser(@PathVariable Long id, @RequestBody User user) {
+    public Boolean updateUser(@PathVariable String id, @RequestBody User user) {
         user.setId(id);
         return userService.updateById(user);
     }
@@ -69,7 +69,7 @@ public class UserController {
     // 删除用户
     @DeleteMapping("/{id}")
     @Operation(summary = "根据ID删除用户")
-    public Boolean deleteUser(@PathVariable Long id) {
+    public Boolean deleteUser(@PathVariable String id) {
         return userService.removeById(id);
     }
 }
