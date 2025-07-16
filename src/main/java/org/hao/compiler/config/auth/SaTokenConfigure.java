@@ -14,10 +14,54 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 //                .addInterceptor(new SaInterceptor(handle -> StpUtil.checkLogin()))
 //                .addPathPatterns("/**")
 //                .excludePathPatterns("/login");
+        //update-begin--Author:scott Date:20221116 for：排除静态资源后缀
+
         registry
                 .addInterceptor(new AuthInterceptor())
                 .addPathPatterns("/**")
-                .excludePathPatterns("/login","/register");
+                .excludePathPatterns(
+                        "/error",
+                        "/**/error",
+                        "/error/**",
+                        "/**/error/**",
+                        "/login",
+                        "/register",
+                        "/favicon.ico",      // 放过网站图标
+                        "/static/**",       // 放过 static 目录下的所有资源
+                        "/assets/**",       // 放过 assets 目录下的所有资源
+                        "/css/**",
+                        "/js/**",
+                        "/images/**",
+                        "/**/*.js",
+                        "/**/*.css",
+                        "/**/*.html",
+                        "/**/*.svg",
+                        "/**/*.pdf",
+                        "/**/*.jpg",
+                        "/**/*.png",
+                        "/**/*.gif",
+                        "/**/*.ico",
+                        "/**/*.ttf",
+                        "/**/*.woff",
+                        "/**/*.woff2",
+                        "/druid/**",
+                        "/doc.html",
+
+                        "/swagger-ui.html",
+                        "/**/swagger-ui.html",
+
+                        "/swagger-ui/**",
+                        "/**/swagger-ui/**",
+
+                        "/swagger-ui/*.html",
+                        "/**/swagger-ui/*.html",
+                        "/webjars/**",
+                        "/v1/**",
+                        "/v2/**",
+                        "/v3/**",
+                        "/**/*.js.map",
+                        "/**/*.css.map"
+                );
     }
 }
 

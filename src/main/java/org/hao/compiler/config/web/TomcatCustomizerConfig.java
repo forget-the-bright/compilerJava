@@ -12,6 +12,8 @@ import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.servlet.Servlet;
 
@@ -24,23 +26,22 @@ import javax.servlet.Servlet;
 //@ConditionalOnClass({Servlet.class, Tomcat.class, UpgradeProtocol.class, TomcatWebServerFactoryCustomizer.class})
 @Configuration
 @Slf4j
-public class TomcatCustomizerConfig { //implements BeanPostProcessor
+public class TomcatCustomizerConfig implements WebMvcConfigurer { //implements BeanPostProcessor
+    /**
+     * 方案一： 默认访问根路径跳转 doc.html页面 （swagger文档页面）
+     * 方案二： 访问根路径改成跳转 index.html页面 （简化部署方案： 可以把前端打包直接放到项目的 webapp，上面的配置）
+     */
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/swagger-ui.html").setViewName("swagger-ui/index.html");
+    }
     @Bean
     public WebServerFactoryCustomizer<ConfigurableTomcatWebServerFactory> webServerFactoryCustomizer() {
         return factory -> {
             // 添加自定义错误页面
             factory.addContextCustomizers((context) -> {
-
-   /*         Arrays.stream(context.getPipeline().getValves())
-                    .filter(valve -> valve instanceof ErrorReportValve)
-                    .findFirst()
-                    .ifPresent(v -> context.getPipeline().removeValve(v));*/
-
                 // Step 2: 添加自定义的 ErrorReportValve
                 CustomErrorReportValve customValve = new CustomErrorReportValve();
-                //customValve.setProperty("errorCode.404", "/complier/error");
-                //customValve.setShowServerInfo(false);
-                //customValve.setShowReport(false);
                 customValve.setAsyncSupported(true);
                 context.getParent().getPipeline().addValve(customValve);
             });
