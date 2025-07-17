@@ -1,5 +1,6 @@
 package org.hao.compiler.websocket.terminal;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.fastjson.JSON;
@@ -23,6 +24,7 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -48,6 +50,7 @@ public class TerminalProjectIPWSHandler {
     private Thread outputThread;
     private String clientIpAddress;
     private String projectId;
+    private String userName;
 
     // 会话管理集合 ip作为第一层分组, 项目id 作为第二层分组, 最后是最终的会话集合
     private static final ConcurrentHashMap<String, ConcurrentHashMap<String, CopyOnWriteArraySet<TerminalProjectIPWSHandler>>> sessions = new ConcurrentHashMap<>();
@@ -103,6 +106,7 @@ public class TerminalProjectIPWSHandler {
         List<String> allIP = IPUtils.allIP;
         ObjectPrincipal<Map<String, Object>> userPrincipal = (ObjectPrincipal) session.getUserPrincipal();
         clientIpAddress = userPrincipal.getObject().get("ipAddr").toString();
+        userName = userPrincipal.getObject().get("username").toString();
 
         CopyOnWriteArraySet<TerminalProjectIPWSHandler> terminalWSHandlers = getTerminalWSHandlers(projectId, clientIpAddress);
         terminalWSHandlers.add(this);
@@ -138,7 +142,12 @@ public class TerminalProjectIPWSHandler {
                         Tuple<String[], Map> shellCommand = getShellCommand();
                         String[] cmd = shellCommand.getFirst();
                         Map<String, String> env = shellCommand.getSecond();
-                        PtyProcess shellProcess = new PtyProcessBuilder().setCommand(cmd).setEnvironment(env).start();
+                        String outPutDir = StrUtil.format("./compile_output/{}/project_{}/", userName, projectId);
+                        File workingDirectory = new File(outPutDir);
+                        if (!workingDirectory.exists()) {
+                            workingDirectory.mkdirs();
+                        }
+                        PtyProcess shellProcess = new PtyProcessBuilder().setDirectory(outPutDir).setCommand(cmd).setEnvironment(env).start();
                         // 读取 Shell 输出流并发送给前端
                         outputThread = new Thread(() -> {
                             readOutput(shellProcess);

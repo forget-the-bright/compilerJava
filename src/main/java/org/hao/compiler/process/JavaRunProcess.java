@@ -1,5 +1,6 @@
 package org.hao.compiler.process;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -7,6 +8,7 @@ import org.hao.compiler.sse.SseUtil;
 import org.hao.compiler.util.CompilerLocal;
 import org.hao.compiler.websocket.terminal.TerminalWSUtil;
 import org.hao.core.compiler.CompilerUtil;
+import org.hao.core.print.ColorText;
 import org.hao.core.print.PrintUtil;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -74,6 +76,16 @@ public class JavaRunProcess {
 
         //开始执行
         ProcessBuilder processBuilder = new ProcessBuilder(options);
+/*        File workingDirectory = new File(outputDir);
+        if (!workingDirectory.exists()) {
+            workingDirectory.mkdirs();
+        }*/
+//        File directory = processBuilder.directory();
+//        ColorText.Builder()
+//                .FgBrightRed()
+//                .build("当前工作目录：{}", directory.getAbsolutePath());
+        //processBuilder.directory(workingDirectory);
+
         process = processBuilder.start();
         inputStream = process.getInputStream();
         SseUtil.sendMegBase64Ln(emitter, TerminalWSUtil.clearCommand);
