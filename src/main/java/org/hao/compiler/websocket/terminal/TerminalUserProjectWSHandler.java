@@ -24,6 +24,7 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -164,7 +165,12 @@ public class TerminalUserProjectWSHandler {
                         Tuple<String[], Map> shellCommand = getShellCommand();
                         String[] cmd = shellCommand.getFirst();
                         Map<String, String> env = shellCommand.getSecond();
-                        PtyProcess shellProcess = new PtyProcessBuilder().setCommand(cmd).setEnvironment(env).start();
+                        String outPutDir = StrUtil.format("./compile_output/{}/project_{}/", userName, projectId);
+                        File workingDirectory = new File(outPutDir);
+                        if (!workingDirectory.exists()) {
+                            workingDirectory.mkdirs();
+                        }
+                        PtyProcess shellProcess = new PtyProcessBuilder().setDirectory(outPutDir).setCommand(cmd).setEnvironment(env).start();
                         // 读取 Shell 输出流并发送给前端
                         outputThread = new Thread(() -> {
                             readOutput(shellProcess);
