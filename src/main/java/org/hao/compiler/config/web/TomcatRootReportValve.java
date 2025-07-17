@@ -32,6 +32,12 @@ public class TomcatRootReportValve extends ErrorReportValve {
         if (response.isCommitted()) {
             return;
         }
+        String contextPath = request.getContextPath();
+        String realContextPath = getContextPath(request);
+        if (contextPath.equals(realContextPath)) {
+            super.report(request, response, throwable);
+            return;
+        }
         try {
             SaTokenContextServletUtil.setContext(request, response);
             if (!StpUtil.isLogin()) {
@@ -48,7 +54,7 @@ public class TomcatRootReportValve extends ErrorReportValve {
             }
         } catch (Exception e) {
             log.error("TomcatRootReportValve error", e);
-        }finally {
+        } finally {
             SaTokenContextServletUtil.clearContext();
         }
     }

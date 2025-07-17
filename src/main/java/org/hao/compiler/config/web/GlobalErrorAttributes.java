@@ -77,10 +77,10 @@ public class GlobalErrorAttributes extends DefaultErrorAttributes {
             }
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             modelAndView = new ModelAndView("error/401");
+            //添加自定义的属性
+            modelAndView.addObject("domainUrl", IPUtils.getBaseUrl());
+            modelAndView.addObject("errorMsg", nle.getMessage());
         }
-        //添加自定义的属性
-        modelAndView.addObject("domainUrl", IPUtils.getBaseUrl());
-        modelAndView.addObject("errorMsg", nle.getMessage());
         return modelAndView;
     }
 

@@ -16,10 +16,9 @@ import java.io.IOException;
 public class SaContextFilter extends OncePerRequestFilter {
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
-            SaTokenContextServletUtil.setContext((HttpServletRequest) request, (HttpServletResponse) response);
+            SaTokenContextServletUtil.setContext(request, response);
             filterChain.doFilter(request, response);
         } finally {
             SaTokenContextServletUtil.clearContext();
