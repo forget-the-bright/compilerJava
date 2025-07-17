@@ -629,7 +629,7 @@ function compileProjectDestory() {
             isStatus401Redirect(response)
             throw new Error('Network response was not ok ' + response.statusText);
         }
-        return response.json(); // 解析 JSON 格式的响应
+        return response.text(); // 解析 JSON 格式的响应
     }).then(data => {
         console.log("销毁编译项目执行成功", data)
     }) // 成功处理响应数据

@@ -266,7 +266,7 @@ public class CompilerController {
     @GetMapping("/compileProjectLocal/sse")
     @ResponseBody
     public SseEmitter compileProjectLocalSse(@RequestParam String projectId, @RequestParam(required = false) String SessionId) {
-        SseEmitter emitter = new SseEmitter();
+        SseEmitter emitter = new SseEmitter(0L);
         Object loginId = StpUtil.getLoginId();
         ThreadUtil.execAsync(() -> {
             try {
