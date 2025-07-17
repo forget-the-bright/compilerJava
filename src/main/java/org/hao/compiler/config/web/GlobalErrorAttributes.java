@@ -40,11 +40,15 @@ public class GlobalErrorAttributes extends DefaultErrorAttributes {
      */
     private ModelAndView NotLoginExceptionHandler(NotLoginException nle, HttpServletResponse response) {
         ModelAndView modelAndView;
-        if (nle.getType().equals(NotLoginException.NOT_TOKEN)) {
+        if (nle.getType().equals(NotLoginException.NOT_TOKEN) ) { //token 不存在的情况去直接去登录
+            //|| nle.getType().equals(NotLoginException.INVALID_TOKEN)
             StpUtil.logout();
             response.setStatus(HttpServletResponse.SC_OK);
             modelAndView = new ModelAndView("redirect:/login");
         } else {
+            if (nle.getType().equals(NotLoginException.INVALID_TOKEN)){ //登录态不在系统保存状态中的情况，如重启服务,清理redis等情况
+                StpUtil.logout(); //清除登录状态
+            }
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             modelAndView = new ModelAndView("error/401");
         }
