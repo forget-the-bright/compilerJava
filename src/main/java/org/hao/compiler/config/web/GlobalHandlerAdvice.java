@@ -43,9 +43,10 @@ public class GlobalHandlerAdvice {
         }
         // 可以在这里加更多通用属性
     }
-
+    @Deprecated
     // 全局异常拦截（拦截项目中的NotLoginException异常）
     //@ExceptionHandler(NotLoginException.class)
+
     @ResponseStatus(HttpStatus.UNAUTHORIZED) //RedirectView
     public RedirectView handlerNotLoginException(NotLoginException nle, RedirectAttributes redirectAttributes) {
         String message = getNotLoginExceptionMessage(nle);
@@ -62,7 +63,7 @@ public class GlobalHandlerAdvice {
     }
 
     @Deprecated
-    @ExceptionHandler(NotLoginException.class)
+    //@ExceptionHandler(NotLoginException.class)
     public ModelAndView handlerNotLoginException(NotLoginException nle, HttpServletResponse response) {
         // String message = getNotLoginExceptionMessage(nle);
         ModelAndView modelAndView;

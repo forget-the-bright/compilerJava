@@ -2,14 +2,16 @@ package org.hao.compiler.config.web;
 
 import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.stp.StpUtil;
-import com.sun.org.apache.regexp.internal.RE;
+import org.hao.core.StrUtil;
 import org.hao.core.ip.IPUtils;
+import org.hao.core.print.ColorText;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.servlet.error.DefaultErrorAttributes;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.resource.ResourceHttpRequestHandler;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -25,10 +27,34 @@ import java.util.Map;
 public class GlobalErrorAttributes extends DefaultErrorAttributes {
     public ModelAndView resolveException(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         super.resolveException(request, response, handler, ex);
+        if (handler instanceof ResourceHttpRequestHandler) {
+            ColorText.Builder()
+                    .BgBrightCyan()
+                    .FgBlue()
+                    .FontBold()
+                    .Println("系统异常[{}],访问ip [{}] , 接口 {} : 但是不存在对应的处理器,跳转404",
+                            ex.getClass().getSimpleName(),
+                            IPUtils.getIpAddr(request),
+                            request.getRequestURI());
+            return NotFoundExceptionHandler(request, response);
+        }
         if (ex instanceof NotLoginException) {
+            ColorText.Builder()
+                    .BgBrightYellow()
+                    .FgRed()
+                    .FontBold()
+                    .Println("鉴权失败,访问ip [{}] , 接口 {} : 存在对应的处理器,进入错误分类处理逻辑",
+                            IPUtils.getIpAddr(request), request.getRequestURI());
             return NotLoginExceptionHandler((NotLoginException) ex, response);
         }
         return null;
+    }
+
+    private ModelAndView NotFoundExceptionHandler(HttpServletRequest request, HttpServletResponse response) {
+        ModelAndView modelAndView = new ModelAndView("error/404");
+        modelAndView.addObject("errorMsg", StrUtil.formatFast("{} : 不存在对应的处理器", request.getRequestURI()));
+        modelAndView.addObject("domainUrl", IPUtils.getBaseUrl());
+        return modelAndView;
     }
 
     /**
@@ -40,13 +66,13 @@ public class GlobalErrorAttributes extends DefaultErrorAttributes {
      */
     private ModelAndView NotLoginExceptionHandler(NotLoginException nle, HttpServletResponse response) {
         ModelAndView modelAndView;
-        if (nle.getType().equals(NotLoginException.NOT_TOKEN) ) { //token 不存在的情况去直接去登录
+        if (nle.getType().equals(NotLoginException.NOT_TOKEN)) { //token 不存在的情况去直接去登录
             //|| nle.getType().equals(NotLoginException.INVALID_TOKEN)
             StpUtil.logout();
             response.setStatus(HttpServletResponse.SC_OK);
             modelAndView = new ModelAndView("redirect:/login");
         } else {
-            if (nle.getType().equals(NotLoginException.INVALID_TOKEN)){ //登录态不在系统保存状态中的情况，如重启服务,清理redis等情况
+            if (nle.getType().equals(NotLoginException.INVALID_TOKEN)) { //登录态不在系统保存状态中的情况，如重启服务,清理redis等情况
                 StpUtil.logout(); //清除登录状态
             }
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
