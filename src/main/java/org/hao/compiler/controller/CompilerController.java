@@ -18,6 +18,7 @@ import org.hao.compiler.service.impl.ProjectService;
 import org.hao.compiler.sse.SseEmitterWriter;
 import org.hao.compiler.sse.SseUtil;
 import org.hao.compiler.util.CompilerLocal;
+import org.hao.compiler.websocket.terminal.TerminalUserProjectWSHandler;
 import org.hao.core.compiler.CompilerUtil;
 import org.hao.core.compiler.InMemoryClassLoader;
 import org.hao.core.ip.IPUtils;
@@ -109,6 +110,7 @@ public class CompilerController {
         // 第二步：根据账号id，进行登录
         try {
             StpUtil.login(username);
+            TerminalUserProjectWSHandler.close(username, "用户在其他地方登录");
         } catch (Exception e) {
             model.addAttribute("error", e.getMessage());
             return "login"; // 登录失败，返回登录页面

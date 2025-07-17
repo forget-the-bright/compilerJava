@@ -14,6 +14,7 @@ import org.hao.compiler.entity.Project;
 import org.hao.compiler.service.impl.ProjectService;
 import org.hao.core.StrUtil;
 import org.hao.core.ip.IPUtils;
+import org.hao.core.print.ColorText;
 import org.hao.vo.Tuple;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.stream.Collectors;
 
 import static org.hao.compiler.websocket.terminal.TerminalWSUtil.*;
 
@@ -41,47 +43,64 @@ import static org.hao.compiler.websocket.terminal.TerminalWSUtil.*;
  * @since 2025/7/9 11:56
  */
 @Component
-@ServerEndpoint(value = "/terminalWS/ip_project/{projectId}") //, configurator = WsConfigurator.class 此注解相当于设置访问URL
+@ServerEndpoint(value = "/terminalWS/user_project/{projectId}") //, configurator = WsConfigurator.class 此注解相当于设置访问URL
 @Slf4j
-public class TerminalIPProjectWSHandler {
+public class TerminalUserProjectWSHandler {
     private Session session;
     private Thread outputThread;
     private String clientIpAddress;
     private String projectId;
+    private String userName;
 
-    // 会话管理集合 ip作为第一层分组, 项目id 作为第二层分组, 最后是最终的会话集合
-    private static final ConcurrentHashMap<String, ConcurrentHashMap<String, CopyOnWriteArraySet<TerminalIPProjectWSHandler>>> sessions = new ConcurrentHashMap<>();
+    // 会话管理集合 用户名作为第一层分组, 项目id 作为第二层分组, 最后是最终的会话集合
+    private static final ConcurrentHashMap<String, ConcurrentHashMap<String, CopyOnWriteArraySet<TerminalUserProjectWSHandler>>> sessions = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, ConcurrentHashMap<String, PtyProcess>> shellProcess = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, ConcurrentHashMap<String, StringBuffer>> passwordBuffer = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, ConcurrentHashMap<String, Boolean>> authorizedOrNot = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, ConcurrentHashMap<String, MessageHistory>> lastMessage = new ConcurrentHashMap<>();
 
-    private static CopyOnWriteArraySet<TerminalIPProjectWSHandler> getTerminalWSHandlers(String clientIpAddress, String projectId) {
-        ConcurrentHashMap<String, CopyOnWriteArraySet<TerminalIPProjectWSHandler>> projectSessions = sessions.computeIfAbsent(clientIpAddress, k -> new ConcurrentHashMap<>());
-        CopyOnWriteArraySet<TerminalIPProjectWSHandler> terminalWSHandlers = projectSessions.computeIfAbsent(projectId, k -> new CopyOnWriteArraySet<>());
+    private static CopyOnWriteArraySet<TerminalUserProjectWSHandler> getTerminalWSHandlers(String userName, String projectId) {
+        ConcurrentHashMap<String, CopyOnWriteArraySet<TerminalUserProjectWSHandler>> projectSessions = sessions.computeIfAbsent(userName, k -> new ConcurrentHashMap<>());
+        CopyOnWriteArraySet<TerminalUserProjectWSHandler> terminalWSHandlers = projectSessions.computeIfAbsent(projectId, k -> new CopyOnWriteArraySet<>());
         return terminalWSHandlers;
     }
 
-    private static ConcurrentHashMap<String, PtyProcess> getShellProcess(String clientIpAddress) {
-        ConcurrentHashMap<String, PtyProcess> projectShellProcess = shellProcess.computeIfAbsent(clientIpAddress, k -> new ConcurrentHashMap<>());
+    private static ConcurrentHashMap<String, PtyProcess> getShellProcess(String userName) {
+        ConcurrentHashMap<String, PtyProcess> projectShellProcess = shellProcess.computeIfAbsent(userName, k -> new ConcurrentHashMap<>());
         return projectShellProcess;
     }
 
-    private static StringBuffer getPasswordBuffer(String clientIpAddress, String projectId) {
-        ConcurrentHashMap<String, StringBuffer> projectPasswordBuffer = passwordBuffer.computeIfAbsent(clientIpAddress, k -> new ConcurrentHashMap<>());
+    private static StringBuffer getPasswordBuffer(String userName, String projectId) {
+        ConcurrentHashMap<String, StringBuffer> projectPasswordBuffer = passwordBuffer.computeIfAbsent(userName, k -> new ConcurrentHashMap<>());
         StringBuffer stringBuffer = projectPasswordBuffer.computeIfAbsent(projectId, k -> new StringBuffer());
         return stringBuffer;
     }
 
-    private static ConcurrentHashMap<String, Boolean> getAuthorizedOrNot(String clientIpAddress) {
-        ConcurrentHashMap<String, Boolean> projectAuthorizedOrNot = authorizedOrNot.computeIfAbsent(clientIpAddress, k -> new ConcurrentHashMap<>());
+    private static ConcurrentHashMap<String, Boolean> getAuthorizedOrNot(String userName) {
+        ConcurrentHashMap<String, Boolean> projectAuthorizedOrNot = authorizedOrNot.computeIfAbsent(userName, k -> new ConcurrentHashMap<>());
         return projectAuthorizedOrNot;
     }
 
-    private static MessageHistory getLastMessage(String clientIpAddress, String projectId) {
-        ConcurrentHashMap<String, MessageHistory> projectLastMessage = lastMessage.computeIfAbsent(clientIpAddress, k -> new ConcurrentHashMap<>());
+    private static MessageHistory getLastMessage(String userName, String projectId) {
+        ConcurrentHashMap<String, MessageHistory> projectLastMessage = lastMessage.computeIfAbsent(userName, k -> new ConcurrentHashMap<>());
         MessageHistory messageHistory = projectLastMessage.computeIfAbsent(projectId, k -> new MessageHistory(100));
         return messageHistory;
+    }
+
+    public static synchronized void close(String userName, String message) {
+        ConcurrentHashMap<String, CopyOnWriteArraySet<TerminalUserProjectWSHandler>> projectSessions = sessions.computeIfAbsent(userName, k -> new ConcurrentHashMap<>());
+        projectSessions.values()
+                .stream()
+                .flatMap(CopyOnWriteArraySet::stream)
+                .collect(Collectors.toList()).forEach(terminalUserProjectWSHandler -> {
+                    terminalUserProjectWSHandler.sendToClient(ColorText.Builder().FgRed().FontBold().build("\r\n\t {} 已断开连接!!!", message));
+                    terminalUserProjectWSHandler.closeSession();
+                });
+    }
+
+    @SneakyThrows
+    public void closeSession() {
+        session.close();
     }
 
     @OnOpen
@@ -103,26 +122,33 @@ public class TerminalIPProjectWSHandler {
         List<String> allIP = IPUtils.allIP;
         ObjectPrincipal<Map<String, Object>> userPrincipal = (ObjectPrincipal) session.getUserPrincipal();
         clientIpAddress = userPrincipal.getObject().get("ipAddr").toString();
+        Object usernameObj = userPrincipal.getObject().get("username");
+        if (usernameObj == null) {
+            sendMessage(ColorText.Builder().FgRed().FontBold().build("\r\n\t {} 已断开连接!!!", userPrincipal.getObject().get("errorMsg")));
+            session.close();
+            return;
+        }
+        userName = usernameObj.toString();
 
-        CopyOnWriteArraySet<TerminalIPProjectWSHandler> terminalWSHandlers = getTerminalWSHandlers(clientIpAddress, projectId);
+        CopyOnWriteArraySet<TerminalUserProjectWSHandler> terminalWSHandlers = getTerminalWSHandlers(userName, projectId);
         terminalWSHandlers.add(this);
         int countSum = sessions.values().stream().flatMap(map -> map.values().stream()).mapToInt(Set::size).sum();
         int clientIpProjectSum = terminalWSHandlers.size();
-        log.info("有新的链接进入,当前 {} 链接总会话: {}, 当前访问ip [{}] , 项目 [{}] 会话数量: {}", this.getClass().getSimpleName(), countSum, clientIpAddress, projectId, clientIpProjectSum);
+        log.info("有新的链接进入,当前 {} 链接总会话: {}, 当前访问用户 [{}] , 项目 [{}] 会话数量: {}", this.getClass().getSimpleName(), countSum, userName, projectId, clientIpProjectSum);
 
         if (allIP.contains(clientIpAddress) || isLoopbackAddress(clientIpAddress)) {//
-            getAuthorizedOrNot(clientIpAddress).computeIfAbsent(projectId, k -> true);
+            getAuthorizedOrNot(userName).computeIfAbsent(projectId, k -> true);
             startShell();
-        } else if (!getAuthorizedOrNot(clientIpAddress)
+        } else if (!getAuthorizedOrNot(userName)
                 .computeIfAbsent(projectId, k -> false) && clientIpProjectSum <= 1) {
             // 未授权,初始化历史消息缓存
-            getPasswordBuffer(clientIpAddress, projectId);
+            getPasswordBuffer(userName, projectId);
             sendToClient(StrUtil.formatFast("IP地址【{}】未授权访问 {}", clientIpAddress, newline));
             sendToClient(StrUtil.formatFast("请输入授权密码: {}", newline));
         }
         // 同步历史消息
         if (clientIpProjectSum > 1) {
-            MessageHistory messageHistory = getLastMessage(clientIpAddress, projectId);
+            MessageHistory messageHistory = getLastMessage(userName, projectId);
             if (!messageHistory.isEmpty()) {
                 messageHistory.consumerMessage(lastMsg -> sendMessage(lastMsg));
             } else sendMessage(StrUtil.formatFast("请按Enter键继续！！！ {}", newline));
@@ -131,7 +157,7 @@ public class TerminalIPProjectWSHandler {
 
     @SneakyThrows
     private synchronized void startShell() {
-        PtyProcess ptyProcess = getShellProcess(clientIpAddress)
+        PtyProcess ptyProcess = getShellProcess(userName)
                 .computeIfAbsent(projectId, k -> {
                     try {
                         //ProcessBuilder pb;
@@ -159,7 +185,7 @@ public class TerminalIPProjectWSHandler {
             while ((read = in.read(buffer)) != -1) {
                 String data = new String(buffer, 0, read, StandardCharsets.UTF_8);
                 //存储100条历史消息
-                MessageHistory messageHistory = getLastMessage(clientIpAddress, projectId);
+                MessageHistory messageHistory = getLastMessage(userName, projectId);
                 messageHistory.addMessage(data);
                 sendToClient(data);
             }
@@ -171,19 +197,19 @@ public class TerminalIPProjectWSHandler {
 
     // 发送数据到前端
     private void sendToClient(String message) {
-        CopyOnWriteArraySet<TerminalIPProjectWSHandler> terminalWSHandlers = getTerminalWSHandlers(clientIpAddress, projectId);
-        if (!getAuthorizedOrNot(clientIpAddress)
+        CopyOnWriteArraySet<TerminalUserProjectWSHandler> terminalWSHandlers = getTerminalWSHandlers(userName, projectId);
+        if (!getAuthorizedOrNot(userName)
                 .computeIfAbsent(projectId, k -> false)) {
             //存储100条历史消息
-            MessageHistory messageHistory = getLastMessage(clientIpAddress, projectId);
+            MessageHistory messageHistory = getLastMessage(userName, projectId);
             messageHistory.addMessage(message);
         }
-        for (TerminalIPProjectWSHandler terminalWSHandler : terminalWSHandlers) {
+        for (TerminalUserProjectWSHandler terminalWSHandler : terminalWSHandlers) {
             terminalWSHandler.sendMessage(message);
         }
     }
 
-    private void sendMessage(String message) {
+    public void sendMessage(String message) {
         if (session != null && session.isOpen()) {
             try {
                 session.getBasicRemote().sendText(message);
@@ -195,33 +221,34 @@ public class TerminalIPProjectWSHandler {
 
     @OnClose
     public void onClose() {
-        close(this, clientIpAddress, projectId);
+        if (userName == null) return;
+        close(this, userName, projectId);
     }
 
-    private static synchronized void close(TerminalIPProjectWSHandler terminalWSHandler, String clientIpAddress, String projectId) {
+    private static synchronized void close(TerminalUserProjectWSHandler terminalWSHandler, String userName, String projectId) {
 
-        CopyOnWriteArraySet<TerminalIPProjectWSHandler> terminalWSHandlers = getTerminalWSHandlers(clientIpAddress, projectId);
+        CopyOnWriteArraySet<TerminalUserProjectWSHandler> terminalWSHandlers = getTerminalWSHandlers(userName, projectId);
         terminalWSHandlers.remove(terminalWSHandler);
         int countSum = sessions.values().stream().flatMap(map -> map.values().stream()).mapToInt(Set::size).sum();
         int clientIpProjectSum = terminalWSHandlers.size();
-        log.info("ip [{}],项目 [{}] 的链接退出,当前 {} 链接总会话: {}, 当前退出ip会话数量: {}", clientIpAddress, projectId, terminalWSHandler.getClass().getSimpleName(), countSum, clientIpProjectSum);
+        log.info("用户 [{}],项目 [{}] 的链接退出,当前 {} 链接总会话: {}, 当前退出ip会话数量: {}", userName, projectId, terminalWSHandler.getClass().getSimpleName(), countSum, clientIpProjectSum);
         if (terminalWSHandlers.isEmpty()) {
 
-            PtyProcess ptyProcess = getShellProcess(clientIpAddress)
+            PtyProcess ptyProcess = getShellProcess(userName)
                     .get(projectId);
             if (ptyProcess != null && ptyProcess.isAlive()) {
                 ptyProcess.destroyForcibly();
                 shellProcess
-                        .computeIfAbsent(clientIpAddress, k -> new ConcurrentHashMap<>())
+                        .computeIfAbsent(userName, k -> new ConcurrentHashMap<>())
                         .remove(projectId);
                 authorizedOrNot
-                        .computeIfAbsent(clientIpAddress, k -> new ConcurrentHashMap<>())
+                        .computeIfAbsent(userName, k -> new ConcurrentHashMap<>())
                         .remove(projectId);
                 passwordBuffer
-                        .computeIfAbsent(clientIpAddress, k -> new ConcurrentHashMap<>())
+                        .computeIfAbsent(userName, k -> new ConcurrentHashMap<>())
                         .remove(projectId);
                 lastMessage
-                        .computeIfAbsent(clientIpAddress, k -> new ConcurrentHashMap<>())
+                        .computeIfAbsent(userName, k -> new ConcurrentHashMap<>())
                         .remove(projectId);
             }
         }
@@ -231,7 +258,7 @@ public class TerminalIPProjectWSHandler {
     @SneakyThrows
     public void OnMessage(String message) {
         try {
-            PtyProcess ptyProcess = getShellProcess(clientIpAddress).get(projectId);
+            PtyProcess ptyProcess = getShellProcess(userName).get(projectId);
             if (message.contains("terminalTerm-resize")) {
                 try {
                     JSONObject obj = JSON.parseObject(message);
@@ -253,8 +280,8 @@ public class TerminalIPProjectWSHandler {
             }
             // 授权不通过情况下,进行密码验证
 
-            ConcurrentHashMap<String, Boolean> projectAuthorizedOrNot = getAuthorizedOrNot(clientIpAddress);
-            StringBuffer projectPasswordBuffer = getPasswordBuffer(clientIpAddress, projectId);
+            ConcurrentHashMap<String, Boolean> projectAuthorizedOrNot = getAuthorizedOrNot(userName);
+            StringBuffer projectPasswordBuffer = getPasswordBuffer(userName, projectId);
             if (!projectAuthorizedOrNot.get(projectId)) {
                 if (message.equals(enterCommand)) {
                     // 如果监听到回车码,进行密码验证

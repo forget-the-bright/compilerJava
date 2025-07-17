@@ -248,6 +248,7 @@
                 },
                 error: function (error) {
                     console.error('错误:', error);
+                    isStatus401Redirect(error)
                     // window.location.href = `${window.baseUrl}/login`;
                 }
             });

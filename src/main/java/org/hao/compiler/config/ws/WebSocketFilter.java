@@ -1,5 +1,6 @@
 package org.hao.compiler.config.ws;
 
+import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.ReflectUtil;
 import org.apache.catalina.connector.Request;
@@ -22,14 +23,19 @@ public class WebSocketFilter implements Filter {
             Request request = (Request) ReflectUtil.getFieldValue(httpRequest, "request");
             if (request != null) {
                 HashMap<String, Object> userPrincipal = new HashMap<>();
+                request.setUserPrincipal(new ObjectPrincipal<Map<String, Object>>(userPrincipal));
                 userPrincipal.put("ipAddr", ipAddr);
-                userPrincipal.put("username", "admin");
+                userPrincipal.put("username", null);
                 userPrincipal.put("user", null);
-                if (StpUtil.isLogin()) {
+                try {
+                    StpUtil.checkLogin();
                     userPrincipal.put("username", StpUtil.getLoginId());
                     userPrincipal.put("user", StpUtil.getSession(true).get("user"));
+                } catch (NotLoginException nlp) {
+                    userPrincipal.put("errorMsg", nlp.getMessage());
+                   // return;
                 }
-                request.setUserPrincipal(new ObjectPrincipal<Map<String, Object>>(userPrincipal));
+
             }
         }
         // 继续执行后续 Filter 或目标资源（WebSocket Endpoint）

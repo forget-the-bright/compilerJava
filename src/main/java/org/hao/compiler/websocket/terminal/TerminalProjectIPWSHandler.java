@@ -15,6 +15,7 @@ import org.hao.compiler.entity.Project;
 import org.hao.compiler.service.impl.ProjectService;
 import org.hao.core.StrUtil;
 import org.hao.core.ip.IPUtils;
+import org.hao.core.print.ColorText;
 import org.hao.vo.Tuple;
 import org.springframework.stereotype.Component;
 
@@ -106,7 +107,13 @@ public class TerminalProjectIPWSHandler {
         List<String> allIP = IPUtils.allIP;
         ObjectPrincipal<Map<String, Object>> userPrincipal = (ObjectPrincipal) session.getUserPrincipal();
         clientIpAddress = userPrincipal.getObject().get("ipAddr").toString();
-        userName = userPrincipal.getObject().get("username").toString();
+        Object usernameObj = userPrincipal.getObject().get("username");
+        if (usernameObj == null) {
+            sendMessage(ColorText.Builder().FgRed().FontBold().build("\r\n\t {} 已断开连接!!!", userPrincipal.getObject().get("errorMsg")));
+            session.close();
+            return;
+        }
+        userName = usernameObj.toString();
 
         CopyOnWriteArraySet<TerminalProjectIPWSHandler> terminalWSHandlers = getTerminalWSHandlers(projectId, clientIpAddress);
         terminalWSHandlers.add(this);
