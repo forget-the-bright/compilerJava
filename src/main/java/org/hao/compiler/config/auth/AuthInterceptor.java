@@ -15,7 +15,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         HttpSession session = request.getSession(false); // 获取session，如果不存在则返回null
-        SaTokenContextServletUtil.setContext((HttpServletRequest) request, (HttpServletResponse) response);
+        SaTokenContextServletUtil.setContext( request, response);
         StpUtil.checkLogin();
         return true; // 已登录，继续处理请求
     }

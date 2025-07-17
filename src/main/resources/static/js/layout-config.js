@@ -181,9 +181,14 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
     // 初始化 jsTree
     var fileBrowser = container.getElement().find('#fileBrowser');
     let projectId = window.projectId;
-    fetch(`${window.baseUrl}/projects/${projectId}/tree`).then(response => response.text())
-        .then(content => {
-            let jstreeData = convertData(JSON.parse(content));
+        fetch(`${window.baseUrl}/projects/${projectId}/tree`).then(response => {
+            if (!response.ok) {
+                isStatus401Redirect(response)
+                throw new Error('Network response was not ok ' + response.statusText);
+            }
+            return response.json(); // 解析 JSON 格式的响应
+        }).then(content => {
+            let jstreeData = convertData(content);
             initJStree(jstreeData, fileBrowser);
 
         }).catch(error => console.error('Error fetching file:', error));
@@ -248,6 +253,10 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
                             {
                                 method: 'POST'
                             });
+                    if (!rdata.ok) {
+                        isStatus401Redirect(rdata)
+                        throw new Error('Network response was not ok ' + rdata.statusText);
+                    }
                     rdata = await rdata.json();
                     let childNode = {type: "directory", id: rdata.id}
                     inst.create_node(node, childNode, "last", function (new_node) {
@@ -265,6 +274,10 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
                             {
                                 method: 'POST'
                             });
+                    if (!rdata.ok) {
+                        isStatus401Redirect(rdata)
+                        throw new Error('Network response was not ok ' + rdata.statusText);
+                    }
                     rdata = await rdata.json();
                     editor.getModel().config = rdata;
                     editor.getModel().setValue(rdata.content);
@@ -301,6 +314,10 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
                             {
                                 method: 'DELETE'
                             });
+                    if (!rdata.ok) {
+                        isStatus401Redirect(rdata)
+                        throw new Error('Network response was not ok ' + rdata.statusText);
+                    }
 
                 }
             }
@@ -337,9 +354,15 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
             // 在这里执行你想要的操作，比如打开一个新的页面、展示详细信息等
             fetch(`${window.baseUrl}/projects/${data.node.id}/reFileName?name=${data.node.text}`, {
                 method: 'GET' // 指定请求方法为 POST
-            }).then(response => response.text())
+            }).then(response => {
+                if (!response.ok) {
+                    isStatus401Redirect(response)
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+                return response.json(); // 解析 JSON 格式的响应
+            })
                 .then(content => {
-                    let data = JSON.parse(content);
+                    let data = content;
                     editor.getModel().config = data;
                     editor.getModel().setValue(data.content);
                 })
@@ -378,9 +401,15 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
             // 在这里执行你想要的操作，比如打开一个新的页面、展示详细信息等
             fetch(`${window.baseUrl}/projects/${data.node.id}/moveFileName?parentProjectResourceId=${parentId}`, {
                 method: 'GET' // 指定请求方法为 POST
-            }).then(response => response.text())
+            }).then(response => {
+                if (!response.ok) {
+                    isStatus401Redirect(response)
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+                return response.json(); // 解析 JSON 格式的响应
+            })
                 .then(content => {
-                    let data = JSON.parse(content);
+                    let data = content;
                     editor.getModel().config = data;
                     editor.getModel().setValue(data.content);
                 })
@@ -472,6 +501,7 @@ function saveEditorFile(flushEditorContent, func) {
         body: JSON.stringify(config), // 将 JavaScript 对象转换为 JSON 字符串
     }).then(response => {
         if (!response.ok) {
+            isStatus401Redirect(response)
             throw new Error('Network response was not ok ' + response.statusText);
         }
         return response.json(); // 解析 JSON 格式的响应
@@ -517,10 +547,10 @@ function compileProjectCode(resultWindowTerm, docmentId, interfaceAddress) {
         let projectId = window.projectId;
         var eventSource = new EventSource(
             `${window.baseUrl}/${interfaceAddress}/sse?projectId=${projectId}&SessionId=${window.SessionId}`, {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            }
-        });
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                }
+            });
         if (interfaceAddress.indexOf("Local") !== -1) {
             $('#terminationBtn').attr("style", '');
         }
@@ -544,7 +574,13 @@ function compileProjectCode(resultWindowTerm, docmentId, interfaceAddress) {
 // 填充编辑器文件内容,根据选择的文件id
 function fillEditorFileContent(ProjectResourceId) {
     fetch(`${window.baseUrl}/projects/${ProjectResourceId}/file`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                isStatus401Redirect(response)
+                throw new Error('Network response was not ok ' + response.statusText);
+            }
+            return response.json(); // 解析 JSON 格式的响应
+        })
         .then(data => {
             if (!data) {
                 return;
@@ -590,6 +626,7 @@ function compileProjectDestory() {
         },
     }).then(response => {
         if (!response.ok) {
+            isStatus401Redirect(response)
             throw new Error('Network response was not ok ' + response.statusText);
         }
         return response.json(); // 解析 JSON 格式的响应
@@ -597,6 +634,13 @@ function compileProjectDestory() {
         console.log("销毁编译项目执行成功", data)
     }) // 成功处理响应数据
         .catch(error => console.error('There was a problem with the fetch operation:', error));
+}
+
+function isStatus401Redirect(response) {
+    if (response.status === 401) {
+         window.location.reload(true);
+        //window.location.href = `${window.baseUrl}/error/401`;
+    }
 }
 
 //endregion

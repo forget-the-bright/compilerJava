@@ -1,21 +1,12 @@
 package org.hao.compiler.config.web;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.catalina.startup.Tomcat;
-import org.apache.coyote.UpgradeProtocol;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.web.embedded.TomcatWebServerFactoryCustomizer;
 import org.springframework.boot.web.embedded.tomcat.ConfigurableTomcatWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
-import javax.servlet.Servlet;
 
 /**
  * TODO
@@ -35,15 +26,16 @@ public class TomcatCustomizerConfig implements WebMvcConfigurer { //implements B
     public void addViewControllers(ViewControllerRegistry registry) {
         registry.addViewController("/swagger-ui.html").setViewName("swagger-ui/index.html");
     }
+
     @Bean
     public WebServerFactoryCustomizer<ConfigurableTomcatWebServerFactory> webServerFactoryCustomizer() {
         return factory -> {
             // 添加自定义错误页面
             factory.addContextCustomizers((context) -> {
                 // Step 2: 添加自定义的 ErrorReportValve
-                CustomErrorReportValve customValve = new CustomErrorReportValve();
-                customValve.setAsyncSupported(true);
-                context.getParent().getPipeline().addValve(customValve);
+                TomcatRootReportValve tomcatRootReportValve = new TomcatRootReportValve();
+                tomcatRootReportValve.setAsyncSupported(true);
+                context.getParent().getPipeline().addValve(tomcatRootReportValve);
             });
         };
     }

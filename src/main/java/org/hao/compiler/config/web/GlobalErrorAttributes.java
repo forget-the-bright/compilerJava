@@ -1,12 +1,13 @@
 package org.hao.compiler.config.web;
 
 import cn.dev33.satoken.exception.NotLoginException;
+import cn.dev33.satoken.stp.StpUtil;
+import com.sun.org.apache.regexp.internal.RE;
 import org.hao.core.ip.IPUtils;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.servlet.error.DefaultErrorAttributes;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -21,21 +22,45 @@ import java.util.Map;
  * @since 2025/7/16 09:31
  */
 @Component
-public class ErrorAttributes extends DefaultErrorAttributes {
+public class GlobalErrorAttributes extends DefaultErrorAttributes {
     public ModelAndView resolveException(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         super.resolveException(request, response, handler, ex);
         if (ex instanceof NotLoginException) {
-            ModelAndView modelAndView = new ModelAndView("error/401");
-            //添加自定义的属性
-            modelAndView.addObject("reason", "完了，你写的代码又产生了一次线上事故");
-            modelAndView.addObject("domainUrl", IPUtils.getBaseUrl());
-            modelAndView.addObject("errorMsg", ex.getMessage());
-            return modelAndView;
-        } else {
-            return null;
+            return NotLoginExceptionHandler((NotLoginException) ex, response);
         }
+        return null;
     }
 
+    /**
+     * 登录异常处理器
+     *
+     * @param nle
+     * @param response
+     * @return 处理错误的视图对象
+     */
+    private ModelAndView NotLoginExceptionHandler(NotLoginException nle, HttpServletResponse response) {
+        ModelAndView modelAndView;
+        if (nle.getType().equals(NotLoginException.NOT_TOKEN)) {
+            StpUtil.logout();
+            response.setStatus(HttpServletResponse.SC_OK);
+            modelAndView = new ModelAndView("redirect:/login");
+        } else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            modelAndView = new ModelAndView("error/401");
+        }
+        //添加自定义的属性
+        modelAndView.addObject("domainUrl", IPUtils.getBaseUrl());
+        modelAndView.addObject("errorMsg", nle.getMessage());
+        return modelAndView;
+    }
+
+    /**
+     * 处理其他异常时参数的设置
+     *
+     * @param webRequest the source request
+     * @param options    options for error attribute contents
+     * @return
+     */
     @Override
     public Map<String, Object> getErrorAttributes(WebRequest webRequest, ErrorAttributeOptions options) {
         //调用父类的方法，会自动获取内置的那些属性，如果你不想要，可以不调用这个

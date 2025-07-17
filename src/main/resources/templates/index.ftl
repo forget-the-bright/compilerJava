@@ -185,6 +185,7 @@
                         myModal.show()
                     },
                     error: function (error) {
+                        isStatus401Redirect(error)
                         console.error('错误:', error);
                     }
                 });
@@ -251,7 +252,12 @@
                 }
             });
         }
-
+        function isStatus401Redirect(error) {
+            if (error.status === 401){
+                window.location.reload(true);
+                //window.location.href = `${window.baseUrl}/error/401`;
+            }
+        }
         //window.addEventListener('resize', renderProjects);
     </script>
 </#noparse>

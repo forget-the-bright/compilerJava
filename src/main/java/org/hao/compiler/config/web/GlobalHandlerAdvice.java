@@ -17,7 +17,6 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.view.RedirectView;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
@@ -27,7 +26,7 @@ import javax.servlet.http.HttpServletResponse;
  * @since 2025/7/16 14:09
  */
 @ControllerAdvice
-public class GlobalModelAttributeAdvice {
+public class GlobalHandlerAdvice {
 
     @ModelAttribute
     public void addGlobalAttributes(Model model) {
@@ -49,7 +48,6 @@ public class GlobalModelAttributeAdvice {
     //@ExceptionHandler(NotLoginException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED) //RedirectView
     public RedirectView handlerNotLoginException(NotLoginException nle, RedirectAttributes redirectAttributes) {
-
         String message = getNotLoginExceptionMessage(nle);
         // String format = StrUtil.format("redirect:/login{}", StrUtil.isEmpty(message) ? message : "?error=" + message);
         if (StrUtil.isNotEmpty(message)) {
@@ -65,10 +63,16 @@ public class GlobalModelAttributeAdvice {
 
     @Deprecated
     @ExceptionHandler(NotLoginException.class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED) //RedirectView
-    public ModelAndView handlerNotLoginException(NotLoginException nle) {
-//        String message = getNotLoginExceptionMessage(nle);
-        ModelAndView modelAndView = new ModelAndView("error/401");
+    public ModelAndView handlerNotLoginException(NotLoginException nle, HttpServletResponse response) {
+        // String message = getNotLoginExceptionMessage(nle);
+        ModelAndView modelAndView;
+        if (nle.getType().equals(NotLoginException.NOT_TOKEN)) {
+            StpUtil.logout();
+            modelAndView = new ModelAndView("redirect:/login");
+        } else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            modelAndView = new ModelAndView("error/401");
+        }
         modelAndView.addObject("errorMsg", nle.getMessage());
         modelAndView.addObject("title", "在线 Java 编译器");
         modelAndView.addObject("domainUrl", IPUtils.getBaseUrl());
