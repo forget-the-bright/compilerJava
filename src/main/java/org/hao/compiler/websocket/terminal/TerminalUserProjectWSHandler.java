@@ -242,7 +242,7 @@ public class TerminalUserProjectWSHandler {
 
             PtyProcess ptyProcess = getShellProcess(userName)
                     .get(projectId);
-            if (ptyProcess != null && ptyProcess.isAlive()) {
+            if (ptyProcess != null) { // && ptyProcess.isAlive()
                 ptyProcess.destroyForcibly();
                 shellProcess
                         .computeIfAbsent(userName, k -> new ConcurrentHashMap<>())
