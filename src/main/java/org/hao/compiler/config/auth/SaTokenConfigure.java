@@ -20,6 +20,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
                 .addInterceptor(new AuthInterceptor())
                 .addPathPatterns("/**")
                 .excludePathPatterns(
+                        "/",
                         "/error",
                         "/**/error",
                         "/error/**",

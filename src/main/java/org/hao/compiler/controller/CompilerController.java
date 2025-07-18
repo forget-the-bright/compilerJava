@@ -50,6 +50,10 @@ public class CompilerController {
     @Operation(summary = "首页")
     @GetMapping("/")
     public ModelAndView index() {
+        if (!StpUtil.isLogin()) {
+            ModelAndView modelAndView = new ModelAndView("redirect:/login");
+            return modelAndView;
+        }
         ModelAndView modelAndView = new ModelAndView("index");
         List<Project> projects = projectService.getProjects();
         modelAndView.addObject("projects", projects);
