@@ -195,6 +195,7 @@ public class TerminalUserProjectWSHandler {
                 messageHistory.addMessage(data);
                 sendToClient(data);
             }
+              close(userName, "会话结束");
             System.out.println("Shell output stream closed");
         } catch (IOException e) {
             log.warn("Shell output stream closed unexpectedly", e);
