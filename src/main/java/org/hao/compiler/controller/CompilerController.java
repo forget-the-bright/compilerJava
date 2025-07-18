@@ -178,7 +178,7 @@ public class CompilerController {
     @GetMapping("/compile/sse")
     @ResponseBody
     public SseEmitter compileSse(@RequestParam String ProjectResourceId) {
-        SseEmitter emitter = new SseEmitter();
+        SseEmitter emitter = new SseEmitter(0L);
         new Thread(() -> {
             try {
                 if (StrUtil.isEmpty(ProjectResourceId)) {
@@ -219,7 +219,7 @@ public class CompilerController {
     @GetMapping("/compileProject/sse")
     @ResponseBody
     public SseEmitter compileProjectSse(@RequestParam String projectId) {
-        SseEmitter emitter = new SseEmitter();
+        SseEmitter emitter = new SseEmitter(0L);
         new Thread(() -> {
             try {
                 if (StrUtil.isEmpty(projectId)) {
@@ -306,6 +306,7 @@ public class CompilerController {
                 List<String> contents = projectService.getProjectSourceContentsByProjectId(Long.parseLong(projectId));
                 SseUtil.sendMegBase64Ln(emitter, "执行编译,编译中...");
                 //执行编译
+
                 CompilerUtil.compileToLocalFile(
                         outPutDir,
                         sseEmitterWriter,
