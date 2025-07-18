@@ -12,6 +12,6 @@ WORKDIR /app
 # 请确保 jar 文件名与实际构建输出一致，例如：compilerJava.jar
 COPY ./target/*.jar app.jar
 # 暴露应用运行的端口（默认 Spring Boot 端口）
-EXPOSE 8080
+EXPOSE 80
 # 启动命令
 ENTRYPOINT ["java", "-jar", "app.jar"]
