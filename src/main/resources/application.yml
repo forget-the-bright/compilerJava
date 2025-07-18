@@ -35,9 +35,9 @@ spring:
 #          password:
 #          driver-class-name: org.h2.Driver
         master:
-          url: jdbc:mysql://192.168.3.199:3306/compiler_java?useSSL=false&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-          username: root
-          password: ks125930.
+          url: jdbc:mysql://${MYSQL_HOST:192.168.3.199}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:compiler_java}?useSSL=false&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+          username: ${MYSQL_USER:root}
+          password: ${MYSQL_PASSWORD:ks125930.}
           driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
