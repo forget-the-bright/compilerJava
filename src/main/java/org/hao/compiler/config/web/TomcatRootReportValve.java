@@ -32,6 +32,7 @@ public class TomcatRootReportValve extends ErrorReportValve {
         if (response.isCommitted()) {
             return;
         }
+        // 如果是当前系统上下文路径的直接跳过
         String contextPath = request.getContextPath();
         String realContextPath = getContextPath(request);
         if (contextPath.equals(realContextPath)) {
