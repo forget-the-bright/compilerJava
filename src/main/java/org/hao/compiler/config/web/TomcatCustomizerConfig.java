@@ -3,8 +3,10 @@ package org.hao.compiler.config.web;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.embedded.tomcat.ConfigurableTomcatWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.filter.ForwardedHeaderFilter;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -31,6 +33,13 @@ public class TomcatCustomizerConfig { //implements BeanPostProcessor
                 context.getParent().getPipeline().addValve(tomcatRootReportValve);
             });
         };
+    }
+    @Bean
+    public FilterRegistrationBean<ForwardedHeaderFilter> forwardedHeaderFilter() {
+        FilterRegistrationBean<ForwardedHeaderFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(new ForwardedHeaderFilter());
+        registration.addUrlPatterns("/*");
+        return registration;
     }
 
 /*    @Override

@@ -4,10 +4,10 @@ import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.ReflectUtil;
 import org.apache.catalina.connector.Request;
-import org.apache.catalina.connector.RequestFacade;
 import org.hao.core.ip.IPUtils;
 
 import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,13 +15,20 @@ import java.util.Map;
 public class WebSocketFilter implements Filter {
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
-        RequestFacade httpRequest = (RequestFacade) servletRequest;
+        HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
         // 判断是否是 WebSocket 握手请求（协议升级）
         if ("websocket".equalsIgnoreCase(httpRequest.getHeader("Upgrade"))) {
             String ipAddr = IPUtils.getIpAddr(httpRequest);
             httpRequest.setAttribute("ipAddr", ipAddr);
-            Request request = (Request) ReflectUtil.getFieldValue(httpRequest, "request");
-            if (request != null) {
+            Object objRequest = ReflectUtil.getFieldValue(httpRequest, "request");
+            while (objRequest == null) {
+                if (objRequest instanceof Request) {
+                    break;
+                }
+                objRequest = ReflectUtil.getFieldValue(objRequest, "request");
+            }
+            if (objRequest != null) {
+                Request request = (Request) objRequest;
                 HashMap<String, Object> userPrincipal = new HashMap<>();
                 request.setUserPrincipal(new ObjectPrincipal<Map<String, Object>>(userPrincipal));
                 userPrincipal.put("ipAddr", ipAddr);
@@ -33,7 +40,7 @@ public class WebSocketFilter implements Filter {
                     userPrincipal.put("user", StpUtil.getSession(true).get("user"));
                 } catch (NotLoginException nlp) {
                     userPrincipal.put("errorMsg", nlp.getMessage());
-                   // return;
+                    // return;
                 }
 
             }
