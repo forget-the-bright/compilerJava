@@ -181,17 +181,17 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
     // 初始化 jsTree
     var fileBrowser = container.getElement().find('#fileBrowser');
     let projectId = window.projectId;
-        fetch(`${window.baseUrl}/projects/${projectId}/tree`).then(response => {
-            if (!response.ok) {
-                isStatus401Redirect(response)
-                throw new Error('Network response was not ok ' + response.statusText);
-            }
-            return response.json(); // 解析 JSON 格式的响应
-        }).then(content => {
-            let jstreeData = convertData(content);
-            initJStree(jstreeData, fileBrowser);
+    fetch(`${window.baseUrl}/projects/${projectId}/tree`).then(response => {
+        if (!response.ok) {
+            isStatus401Redirect(response)
+            throw new Error('Network response was not ok ' + response.statusText);
+        }
+        return response.json(); // 解析 JSON 格式的响应
+    }).then(content => {
+        let jstreeData = convertData(content);
+        initJStree(jstreeData, fileBrowser);
 
-        }).catch(error => console.error('Error fetching file:', error));
+    }).catch(error => console.error('Error fetching file:', error));
 
     function initJStree(jstreeData, fileBrowser) {
         let jstree;
@@ -561,14 +561,16 @@ function compileProjectCode(resultWindowTerm, docmentId, interfaceAddress) {
             resultWindowTerm.write(message);
         };
         eventSource.onerror = function () {
-            if (eventSource.readyState === 2) {
-                // eventSource.close();
-                console.log('compileProject eventSource is error close ');
+            console.log('compileProject eventSource is error  status', eventSource);
+            console.log('compileProject eventSource is error  status', eventSource.readyState);
+            checkCompileProjectStatus(resultWindowTerm, eventSource);
+            /*if (eventSource.readyState === 1) {
+                eventSource.close();
                 $(`${docmentId}`).prop("disabled", false);
                 if (interfaceAddress.indexOf("Local") !== -1) {
                     $('#terminationBtn').attr("style", 'display: none;');
                 }
-            }
+            }*/
         };
     });
 }
@@ -638,9 +640,46 @@ function compileProjectDestory() {
         .catch(error => console.error('There was a problem with the fetch operation:', error));
 }
 
+// 运行状态检查事件
+function checkCompileProjectStatus(resultWindowTerm, eventSource) {
+    $('#compileProjectLocalSseBtn').prop("disabled", true);
+    // 使用 fetch 发送 POST 请求
+    fetch(`${window.baseUrl}/compileProjectLocal/status?SessionId=${window.SessionId}`, {
+        method: 'GET', // 指定请求方法为 POST
+        headers: {
+            'Content-Type': 'application/json', // 设置请求头，表明请求体是 JSON 格式
+        },
+    }).then(response => {
+        if (!response.ok) {
+            isStatus401Redirect(response)
+            throw new Error('Network response was not ok ' + response.statusText);
+        }
+        return response.json(); // 解析 JSON 格式的响应
+    }).then(data => {
+        console.log("编译项目状态检查执行成功", data)
+        if (data.status) {
+            resultWindowTerm.clear();
+            //编译状态
+            $('#compileProjectLocalSseBtn').prop("disabled", true);
+            $('#terminationBtn').attr("style", '');
+            //激活输出窗口
+            activateTabByTitle('output', layout)
+            // 发送sse消息
+            compileProjectCode(resultWindowTerm, '#compileProjectLocalSseBtn', 'compileProjectLocal');
+        } else {
+            //非编译状态
+            $('#compileProjectLocalSseBtn').prop("disabled", false);
+            $('#terminationBtn').attr("style", 'display: none;');
+            if (eventSource) {
+                eventSource.close();
+            }
+        }
+    }).catch(error => console.error('There was a problem with the fetch operation:', error));
+}
+
 function isStatus401Redirect(response) {
     if (response.status === 401) {
-         window.location.reload(true);
+        window.location.reload(true);
         //window.location.href = `${window.baseUrl}/error/401`;
     }
 }

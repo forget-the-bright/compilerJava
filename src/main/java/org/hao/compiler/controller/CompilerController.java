@@ -19,6 +19,7 @@ import org.hao.compiler.sse.SseEmitterWriter;
 import org.hao.compiler.sse.SseUtil;
 import org.hao.compiler.util.CompilerLocal;
 import org.hao.compiler.websocket.terminal.TerminalUserProjectWSHandler;
+import org.hao.core.Maps;
 import org.hao.core.compiler.CompilerUtil;
 import org.hao.core.compiler.InMemoryClassLoader;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -272,6 +274,17 @@ public class CompilerController {
     @ResponseBody
     public SseEmitter compileProjectLocalSse(@RequestParam String projectId, @RequestParam(required = false) String SessionId) {
         SseEmitter emitter = new SseEmitter(0L);
+        JavaRunProcess sessionId = CompilerLocal.getSessionId(SessionId);
+        if (sessionId != null && sessionId.isAlive()) {
+            sessionId.setEmitter(emitter);
+            emitter.onCompletion(() -> {
+                sessionId.destroyForcibly();
+                CompilerLocal.clearSessionId(SessionId);
+            });
+            return emitter;
+        } else {
+            CompilerLocal.clearSessionId(SessionId);
+        }
         Object loginId = StpUtil.getLoginId();
         ThreadUtil.execAsync(() -> {
             try {
@@ -291,7 +304,7 @@ public class CompilerController {
                 }
                 SseUtil.sendMegBase64Ln(emitter, "编译相关信息初始化...");
                 //编译信息初始化。
-                String outPutDir = StrUtil.format("./compile_output/{}/project_{}/",loginId, projectId);
+                String outPutDir = StrUtil.format("./compile_output/{}/project_{}/", loginId, projectId);
                 String mainClass = projectById.getMainClass();
                 JavaRunProcess javaRunProcess = new JavaRunProcess(outPutDir, mainClass, emitter);
                 CompilerLocal.setSessionId(SessionId, javaRunProcess);
@@ -321,6 +334,10 @@ public class CompilerController {
                 } catch (Exception exception) {
                 }
                 log.error("编译异常", e);
+                JavaRunProcess javaRunProcess = CompilerLocal.getSessionId(SessionId);
+                if (javaRunProcess != null){
+                    javaRunProcess.stop();
+                }
                 emitter.complete();
                 CompilerLocal.clearSessionId(SessionId);
             }
@@ -335,6 +352,14 @@ public class CompilerController {
         JavaRunProcess sessionId = CompilerLocal.getSessionId(SessionId);
         if (sessionId == null) return;
         sessionId.dynamicDestory();
+    }
+
+    @Operation(summary = "获取编译项目代码本地SSE的执行状态")
+    @GetMapping("/compileProjectLocal/status")
+    @ResponseBody
+    public Map<String, Object> compileProjectLocalStatus(@RequestParam String SessionId) {
+        JavaRunProcess sessionId = CompilerLocal.getSessionId(SessionId);
+        return Maps.asMap(Maps.put("status", sessionId != null && sessionId.isAlive()));
     }
 
 } 

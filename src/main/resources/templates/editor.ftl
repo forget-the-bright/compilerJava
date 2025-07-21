@@ -197,6 +197,7 @@
         $('#terminationBtn').click(() => {
             compileProjectDestory();
         })
+        checkCompileProjectStatus(resultWindowTerm);
     </script>
 </#noparse>
 </body>

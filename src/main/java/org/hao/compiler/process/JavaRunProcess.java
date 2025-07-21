@@ -1,11 +1,11 @@
 package org.hao.compiler.process;
 
-import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.hao.compiler.sse.SseUtil;
 import org.hao.compiler.util.CompilerLocal;
+import org.hao.compiler.websocket.terminal.MessageHistory;
 import org.hao.compiler.websocket.terminal.TerminalWSUtil;
 import org.hao.core.compiler.CompilerUtil;
 import org.hao.core.print.ColorText;
@@ -25,6 +25,7 @@ import java.util.TreeSet;
  * @author wanghao(helloworlwh @ 163.com)
  * @since 2025/7/10 17:00
  */
+
 @Slf4j
 public class JavaRunProcess {
 
@@ -34,6 +35,7 @@ public class JavaRunProcess {
     private InputStream inputStream;
     private Thread outputThread;
     private String mainClass;
+    private MessageHistory messageHistory = new MessageHistory(1000);
     private StringBuilder command = new StringBuilder();
     private List<String> options = new ArrayList<>();
 
@@ -49,6 +51,21 @@ public class JavaRunProcess {
 //        command.append(commandStr).append(" ");
     }
 
+    public void setEmitter(SseEmitter emitter) {
+        this.emitter = emitter;
+        messageHistory.consumerMessage(msg -> {
+            try {
+                SseUtil.sendMegBase64(emitter, msg);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public SseEmitter getEmitter() {
+        return emitter;
+    }
+
     @SneakyThrows
     public void run() {
 
@@ -59,7 +76,15 @@ public class JavaRunProcess {
                 : "java";
         String javaPath = StrUtil.format("{}{}bin{}{}", javaHome, File.separator, File.separator, executableName);
         TreeSet<String> classpath = CompilerUtil.loadClassPath();
-        classpath.add(outputDir);
+        File workingDirectory = new File(outputDir);
+        if (!workingDirectory.exists()) {
+            workingDirectory.mkdirs();
+        }
+        String workingDirectoryDir = ColorText.Builder()
+                .FgBrightRed()
+                .build("当前工作目录：{}", workingDirectory.getAbsolutePath());
+        log.info(workingDirectoryDir);
+        classpath.add(workingDirectory.getAbsolutePath());
         String joinClassPath = StrUtil.join(File.pathSeparator, classpath);
 
 
@@ -76,15 +101,8 @@ public class JavaRunProcess {
 
         //开始执行
         ProcessBuilder processBuilder = new ProcessBuilder(options);
-/*        File workingDirectory = new File(outputDir);
-        if (!workingDirectory.exists()) {
-            workingDirectory.mkdirs();
-        }*/
-//        File directory = processBuilder.directory();
-//        ColorText.Builder()
-//                .FgBrightRed()
-//                .build("当前工作目录：{}", directory.getAbsolutePath());
-        //processBuilder.directory(workingDirectory);
+        // 设置工作目录
+        processBuilder.directory(workingDirectory);
 
         process = processBuilder.start();
         inputStream = process.getInputStream();
@@ -106,6 +124,7 @@ public class JavaRunProcess {
             while ((read = in.read(buffer)) != -1) {
                 // String data = new String(buffer, 0, read, StandardCharsets.UTF_8);
                 String data = new String(buffer, 0, read);
+                messageHistory.addMessage(data);
                 SseUtil.sendMegBase64(emitter, data);
             }
             System.out.println("Shell output stream closed");
@@ -117,17 +136,22 @@ public class JavaRunProcess {
     }
 
     @SneakyThrows
-    private void stop() {
-        SseUtil.sendMegBase64Ln(emitter, TerminalWSUtil.newline);
-        SseUtil.sendMegBase64Ln(emitter, PrintUtil.BLUE.getColorStr("运行结束,程序退出!!!"));
-        emitter.complete();
-        CompilerLocal.clearJavaRunProcess(this);
-        if (process != null) {
-            process.destroy();
+    public void stop() {
+        try {
+            SseUtil.sendMegBase64Ln(emitter, TerminalWSUtil.newline);
+            SseUtil.sendMegBase64Ln(emitter, PrintUtil.BLUE.getColorStr("运行结束,程序退出!!!"));
+        }finally {
+            emitter.complete();
+            CompilerLocal.clearJavaRunProcess(this);
+            if (process != null) {
+                process.destroyForcibly();
+            }
+            if (outputThread != null) {
+                outputThread.interrupt();
+            }
         }
-        if (outputThread != null) {
-            outputThread.interrupt();
-        }
+
+
     }
 
     // 动态销毁标识,默认false 执行默认销毁,程序自己退出,否则执行强制销毁
@@ -138,12 +162,21 @@ public class JavaRunProcess {
         if (process != null && process.isAlive()) {
             if (!isExecDestory) {
                 //这个方法会请求操作系统终止对应的子进程。但请注意，这是一个异步操作，并不保证立即完成。
-                SseUtil.sendMegBase64(emitter, PrintUtil.BLUE.getColorStr("已向进程发送退出指令"));
+                try {
+                    SseUtil.sendMegBase64(emitter, PrintUtil.BLUE.getColorStr("已向进程发送退出指令"));
+                }catch (Exception e){
+
+                }
+
                 process.destroy(); // 请求终止进程
                 isExecDestory = true;
             } else {
                 // 如果进程没有响应普通的 destroy() 命令，你可以在 Java 8 及以上版本中使用 destroyForcibly();
-                SseUtil.sendMegBase64(emitter, PrintUtil.BLUE.getColorStr("已向进程发送强制退出指令"));
+                try {
+                    SseUtil.sendMegBase64(emitter, PrintUtil.BLUE.getColorStr("已向进程发送强制退出指令"));
+                }catch (Exception e){
+
+                }
                 process.destroyForcibly(); // 强制终止进程
             }
         }
@@ -165,5 +198,9 @@ public class JavaRunProcess {
             // 如果进程没有响应普通的 destroy() 命令，你可以在 Java 8 及以上版本中使用 destroyForcibly();
             process.destroyForcibly(); // 强制终止进程
         }
+    }
+
+    public boolean isAlive() {
+        return process != null && process.isAlive();
     }
 }
