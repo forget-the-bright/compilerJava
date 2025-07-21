@@ -561,11 +561,13 @@ function compileProjectCode(resultWindowTerm, docmentId, interfaceAddress) {
             resultWindowTerm.write(message);
         };
         eventSource.onerror = function () {
-            eventSource.close();
-            console.log('compileProject eventSource is error close ');
-            $(`${docmentId}`).prop("disabled", false);
-            if (interfaceAddress.indexOf("Local") !== -1) {
-                $('#terminationBtn').attr("style", 'display: none;');
+            if (eventSource.readyState === 2) {
+                // eventSource.close();
+                console.log('compileProject eventSource is error close ');
+                $(`${docmentId}`).prop("disabled", false);
+                if (interfaceAddress.indexOf("Local") !== -1) {
+                    $('#terminationBtn').attr("style", 'display: none;');
+                }
             }
         };
     });
