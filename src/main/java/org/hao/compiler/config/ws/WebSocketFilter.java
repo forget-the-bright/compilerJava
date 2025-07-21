@@ -22,7 +22,7 @@ public class WebSocketFilter implements Filter {
             httpRequest.setAttribute("ipAddr", ipAddr);
             Object objRequest = ReflectUtil.getFieldValue(httpRequest, "request");
             while (objRequest == null) {
-                if (objRequest instanceof Request) {
+                if (objRequest.getClass().getName().equals(Request.class.getName())) {
                     break;
                 }
                 objRequest = ReflectUtil.getFieldValue(objRequest, "request");
