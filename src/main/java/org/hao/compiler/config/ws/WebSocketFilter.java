@@ -21,8 +21,8 @@ public class WebSocketFilter implements Filter {
             String ipAddr = IPUtils.getIpAddr(httpRequest);
             httpRequest.setAttribute("ipAddr", ipAddr);
             Object objRequest = ReflectUtil.getFieldValue(httpRequest, "request");
-            while (objRequest == null) {
-                if (objRequest.getClass().getName().equals(Request.class.getName())) {
+            while (objRequest != null) {
+                if (objRequest instanceof Request) {
                     break;
                 }
                 objRequest = ReflectUtil.getFieldValue(objRequest, "request");
