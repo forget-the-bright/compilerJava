@@ -75,7 +75,8 @@ public class CompilerController {
         }
         modelAndView.addObject("projectId", projectId);
         modelAndView.addObject("project", projectById);
-        modelAndView.addObject("SessionId", UUID.randomUUID().toString());
+//        modelAndView.addObject("SessionId", UUID.randomUUID().toString());
+        modelAndView.addObject("SessionId", projectId);
         return modelAndView;
     }
 

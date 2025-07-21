@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * TODO
@@ -30,7 +31,7 @@ import java.util.TreeSet;
 public class JavaRunProcess {
 
     private String outputDir;
-    private SseEmitter emitter;
+    private CopyOnWriteArraySet<SseEmitter> emitters = new CopyOnWriteArraySet<>();
     private Process process;
     private InputStream inputStream;
     private Thread outputThread;
@@ -42,7 +43,8 @@ public class JavaRunProcess {
     public JavaRunProcess(String outputDir, String mainClass, SseEmitter emitter) {
         this.outputDir = outputDir;
         this.mainClass = mainClass;
-        this.emitter = emitter;
+        this.emitters.add(emitter);
+
     }
 
     private void buildCommand(String commandStr) {
@@ -52,18 +54,37 @@ public class JavaRunProcess {
     }
 
     public void setEmitter(SseEmitter emitter) {
-        this.emitter = emitter;
+        this.emitters.add(emitter);
         messageHistory.consumerMessage(msg -> {
             try {
                 SseUtil.sendMegBase64(emitter, msg);
             } catch (IOException e) {
+                this.emitters.remove(emitter);
                 throw new RuntimeException(e);
             }
         });
     }
 
-    public SseEmitter getEmitter() {
-        return emitter;
+    private void sendMsg(String msg) {
+        for (SseEmitter sseEmitter : this.emitters) {
+            try {
+                SseUtil.sendMegBase64(sseEmitter, msg);
+            } catch (IOException e) {
+                this.emitters.remove(sseEmitter);
+//                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void sendMsgLn(String msg) {
+        for (SseEmitter sseEmitter : this.emitters) {
+            try {
+                SseUtil.sendMegBase64Ln(sseEmitter, msg);
+            } catch (IOException e) {
+                this.emitters.remove(sseEmitter);
+//                throw new RuntimeException(e);
+            }
+        }
     }
 
     @SneakyThrows
@@ -106,9 +127,9 @@ public class JavaRunProcess {
 
         process = processBuilder.start();
         inputStream = process.getInputStream();
-        SseUtil.sendMegBase64Ln(emitter, TerminalWSUtil.clearCommand);
-        SseUtil.sendMegBase64Ln(emitter, command.toString());
-        SseUtil.sendMegBase64Ln(emitter, TerminalWSUtil.newline);
+        sendMsgLn(TerminalWSUtil.clearCommand);
+        sendMsgLn(command.toString());
+        sendMsgLn(TerminalWSUtil.newline);
         // 读取 Shell 输出流并发送给前端
         //readOutput();
         outputThread = new Thread(this::readOutput);
@@ -125,7 +146,7 @@ public class JavaRunProcess {
                 // String data = new String(buffer, 0, read, StandardCharsets.UTF_8);
                 String data = new String(buffer, 0, read);
                 messageHistory.addMessage(data);
-                SseUtil.sendMegBase64(emitter, data);
+                sendMsg(data);
             }
             System.out.println("Shell output stream closed");
         } catch (IOException e) {
@@ -138,10 +159,16 @@ public class JavaRunProcess {
     @SneakyThrows
     public void stop() {
         try {
-            SseUtil.sendMegBase64Ln(emitter, TerminalWSUtil.newline);
-            SseUtil.sendMegBase64Ln(emitter, PrintUtil.BLUE.getColorStr("运行结束,程序退出!!!"));
-        }finally {
-            emitter.complete();
+            sendMsgLn(TerminalWSUtil.newline);
+            sendMsgLn(PrintUtil.BLUE.getColorStr("运行结束,程序退出!!!"));
+        } finally {
+            this.emitters.forEach(emitter -> {
+                try {
+                    emitter.complete();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
             CompilerLocal.clearJavaRunProcess(this);
             if (process != null) {
                 process.destroyForcibly();
@@ -163,8 +190,8 @@ public class JavaRunProcess {
             if (!isExecDestory) {
                 //这个方法会请求操作系统终止对应的子进程。但请注意，这是一个异步操作，并不保证立即完成。
                 try {
-                    SseUtil.sendMegBase64(emitter, PrintUtil.BLUE.getColorStr("已向进程发送退出指令"));
-                }catch (Exception e){
+                    sendMsg(PrintUtil.BLUE.getColorStr("已向进程发送退出指令"));
+                } catch (Exception e) {
 
                 }
 
@@ -173,8 +200,8 @@ public class JavaRunProcess {
             } else {
                 // 如果进程没有响应普通的 destroy() 命令，你可以在 Java 8 及以上版本中使用 destroyForcibly();
                 try {
-                    SseUtil.sendMegBase64(emitter, PrintUtil.BLUE.getColorStr("已向进程发送强制退出指令"));
-                }catch (Exception e){
+                    sendMsg(PrintUtil.BLUE.getColorStr("已向进程发送强制退出指令"));
+                } catch (Exception e) {
 
                 }
                 process.destroyForcibly(); // 强制终止进程

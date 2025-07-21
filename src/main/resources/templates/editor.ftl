@@ -67,10 +67,10 @@
         const EventSource = EventSourcePolyfill;
         window.EventSource = EventSource;
         window.xterm = {Terminal, FitAddon, WebLinksAddon, AttachAddon, SerializeAddon};
-
         var editor, layout;
         // 初始化布局
         layout = new GoldenLayout(GoldenConfig, '#layout-container');
+        window.layout = layout;
         // 注册组件
         for (let [key, value] of GoldenComponentMap) {
             layout.registerComponent(key, value);

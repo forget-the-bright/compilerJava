@@ -149,6 +149,7 @@ GoldenComponentMap.set('editor', function (container, state) {
             fontSize: 16,
             automaticLayout: true
         });
+        window.editor = editor;
         let fileId = window.mainClassId;
         // 填充文件内容
         fillEditorFileContent(fileId);
@@ -279,8 +280,8 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
                         throw new Error('Network response was not ok ' + rdata.statusText);
                     }
                     rdata = await rdata.json();
-                    editor.getModel().config = rdata;
-                    editor.getModel().setValue(rdata.content);
+                     window.editor.getModel().config = rdata;
+                     window.editor.getModel().setValue(rdata.content);
                     //let currentNode = inst.get_node(data.reference);
                     let childNode = {type: "file", id: rdata.id}
                     //console.log('childNode', childNode)
@@ -363,8 +364,8 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
             })
                 .then(content => {
                     let data = content;
-                    editor.getModel().config = data;
-                    editor.getModel().setValue(data.content);
+                     window.editor.getModel().config = data;
+                     window.editor.getModel().setValue(data.content);
                 })
                 .catch(error => console.error('Error fetching file:', error));
         });
@@ -410,8 +411,8 @@ GoldenComponentMap.set('fileBrowser', function (container, state) {
             })
                 .then(content => {
                     let data = content;
-                    editor.getModel().config = data;
-                    editor.getModel().setValue(data.content);
+                     window.editor.getModel().config = data;
+                     window.editor.getModel().setValue(data.content);
                 })
                 .catch(error => console.error('Error fetching file:', error));
             // 在这里执行你的逻辑，例如发送请求到服务器更新数据库
@@ -484,7 +485,13 @@ function activateTabByTitle(titleToFind, layout) {
 
 //保存文件函数
 function saveEditorFile(flushEditorContent, func) {
-    let config = editor.getModel().config;
+    if (!(typeof window.editor.getModel === 'function')) {
+        //未加载model方法
+        console.log("未加载model方法");
+        if (func) func();
+        return;
+    }
+    let config =  window.editor.getModel().config;
     if (!config) {
         // alert('请选择文件');
         return;
@@ -509,8 +516,8 @@ function saveEditorFile(flushEditorContent, func) {
         console.log(data)
         if (func) func();
         if (flushEditorContent) {
-            editor.getModel().config = data;
-            editor.getModel().setValue(data.content);
+             window.editor.getModel().config = data;
+             window.editor.getModel().setValue(data.content);
         }
     }) // 成功处理响应数据
         .catch(error => console.error('There was a problem with the fetch operation:', error));
@@ -519,7 +526,7 @@ function saveEditorFile(flushEditorContent, func) {
 //编译当前文件函数
 function compileCurrentCode(resultWindowTerm) {
     saveEditorFile(true, () => {
-        let config = editor.getModel().config;
+        let config =  window.editor.getModel().config;
         if (!config) {
             // alert('请选择文件');
             return;
@@ -558,6 +565,7 @@ function compileProjectCode(resultWindowTerm, docmentId, interfaceAddress) {
         eventSource.onmessage = function (e) {
             let message = e.data;
             message = base64ToUtf8(message);
+            // console.log('compileProject message', message);
             resultWindowTerm.write(message);
         };
         eventSource.onerror = function () {
@@ -589,8 +597,8 @@ function fillEditorFileContent(ProjectResourceId) {
             if (!data) {
                 return;
             }
-            editor.getModel().config = data;
-            editor.getModel().setValue(data.content);
+             window.editor.getModel().config = data;
+             window.editor.getModel().setValue(data.content);
         })
         .catch(error => console.error('Error fetching file:', error));
 }
@@ -662,10 +670,12 @@ function checkCompileProjectStatus(resultWindowTerm, eventSource) {
             //编译状态
             $('#compileProjectLocalSseBtn').prop("disabled", true);
             $('#terminationBtn').attr("style", '');
-            //激活输出窗口
-            activateTabByTitle('output', layout)
-            // 发送sse消息
-            compileProjectCode(resultWindowTerm, '#compileProjectLocalSseBtn', 'compileProjectLocal');
+            if (!eventSource){ // 如果不是从eventSource error 监听来的
+                //激活输出窗口
+                activateTabByTitle('output', layout)
+                // 发送sse消息
+                compileProjectCode(resultWindowTerm, '#compileProjectLocalSseBtn', 'compileProjectLocal');
+            }
         } else {
             //非编译状态
             $('#compileProjectLocalSseBtn').prop("disabled", false);
