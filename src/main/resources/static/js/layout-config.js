@@ -494,6 +494,7 @@ function saveEditorFile(flushEditorContent, func) {
     let config =  window.editor.getModel().config;
     if (!config) {
         // alert('请选择文件');
+        if (func) func();
         return;
     }
     config.content = getCode();
@@ -708,6 +709,7 @@ function checkCompileProjectStatus(resultWindowTerm, eventSource) {
             $('#compileProjectLocalSseBtn').prop("disabled", true);
             $('#terminationBtn').attr("style", '');
             if (!eventSource){ // 如果不是从eventSource error 监听来的
+                console.log("果不是从eventSource error 监听来的", eventSource)
                 //激活输出窗口
                 activateTabByTitle('output', layout)
                 // 发送sse消息
