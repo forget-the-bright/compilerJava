@@ -2,20 +2,21 @@ package org.hao.compiler.config.auth;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class SaTokenConfigure implements WebMvcConfigurer {
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+       // registry.addResourceHandler("swagger-ui.html").addResourceLocations("classpath:/META-INF/resources/");
+        registry.addResourceHandler("doc.html").addResourceLocations("classpath:/META-INF/resources/");
+        registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");
+    }
     // 注册拦截器
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         // 注册 Sa-Token 拦截器，校验规则为 StpUtil.checkLogin() 登录校验。
-//        registry
-//                .addInterceptor(new SaInterceptor(handle -> StpUtil.checkLogin()))
-//                .addPathPatterns("/**")
-//                .excludePathPatterns("/login");
-        //update-begin--Author:scott Date:20221116 for：排除静态资源后缀
-
         registry
                 .addInterceptor(new AuthInterceptor())
                 .addPathPatterns("/**")
@@ -64,6 +65,11 @@ public class SaTokenConfigure implements WebMvcConfigurer {
                         "/**/*.js.map",
                         "/**/*.css.map"
                 );
+        //        registry
+//                .addInterceptor(new SaInterceptor(handle -> StpUtil.checkLogin()))
+//                .addPathPatterns("/**")
+//                .excludePathPatterns("/login");
+        //update-begin--Author:scott Date:20221116 for：排除静态资源后缀
     }
 }
 

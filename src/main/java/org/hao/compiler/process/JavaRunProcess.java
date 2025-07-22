@@ -10,6 +10,8 @@ import org.hao.compiler.websocket.terminal.TerminalWSUtil;
 import org.hao.core.compiler.CompilerUtil;
 import org.hao.core.print.ColorText;
 import org.hao.core.print.PrintUtil;
+import org.hao.spring.SpringRunUtil;
+import org.springframework.boot.system.ApplicationHome;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.File;
@@ -97,6 +99,17 @@ public class JavaRunProcess {
                 : "java";
         String javaPath = StrUtil.format("{}{}bin{}{}", javaHome, File.separator, File.separator, executableName);
         TreeSet<String> classpath = CompilerUtil.loadClassPath();
+
+        ApplicationHome home = new ApplicationHome(SpringRunUtil.startUpClass);
+        String jarBaseFile = home.getSource().getPath();
+        //移除本地启动中，classpath 中ide相关的路径
+        if (!jarBaseFile.endsWith(".jar")) {
+            String replace = jarBaseFile.replace("\\", "/") + "/";
+            classpath.remove(replace);
+            String classpathJar = classpath.stream().filter(path -> path.contains("/Temp/classpath")).findFirst().orElse("");
+            classpath.remove(classpathJar);
+        }
+
         File workingDirectory = new File(outputDir);
         if (!workingDirectory.exists()) {
             workingDirectory.mkdirs();

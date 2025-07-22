@@ -698,7 +698,7 @@ function isStatus401Redirect(response) {
 
 //region mjs相关逻辑
 
-function getTermAndFitAddon(scrollback, document) {
+function getTermAndFitAddon(scrollback, document,webLinksAddon) {
     let term = new xterm.Terminal({
         cursorBlink: true,
         fontFamily: 'monospace',
@@ -715,7 +715,7 @@ function getTermAndFitAddon(scrollback, document) {
         macOptionIsMeta: true, // macOS 上 Option 键作为 Meta 键使用
     });
     let fitAddon = new xterm.FitAddon();
-    let webLinksAddon = new xterm.WebLinksAddon();
+    // let webLinksAddon = new xterm.WebLinksAddon();
     // let clipboardAddon = new ClipboardAddon.ClipboardAddon();
     term.loadAddon(fitAddon);
     // 加载并启用 WebLinksAddon，这允许识别和点击网页链接

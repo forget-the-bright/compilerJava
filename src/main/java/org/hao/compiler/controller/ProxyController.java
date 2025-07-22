@@ -26,7 +26,13 @@ public class ProxyController {
     @RequestMapping("/{port}/**")
     public void proxy(@PathVariable("port") int port, HttpServletRequest request, HttpServletResponse response) throws Exception {
         String restOfThePath = extractProxyPath(request, port);
-        String targetUrl = "http://localhost:" + port + restOfThePath;
+        String targetUrl = "http://localhost";
+        if (port == 80) {
+            targetUrl +=  restOfThePath;
+        } else {
+            targetUrl += ":" + port + restOfThePath;
+        }
+
 
         if (isSseRequest(request)) {
             handleSse(request, response, targetUrl);
