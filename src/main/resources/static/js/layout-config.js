@@ -175,7 +175,7 @@ GoldenComponentMap.set('console', function (container, state) {
     container.getElement().html('<div id="logWindow" style="width: 100%; height: 100%;"></div>');
 });
 GoldenComponentMap.set('terminal', function (container, state) {
-    container.getElement().html('<div id="terminal" style="width: 100%; height: 100%;"></div>');
+    container.getElement().html('<div id="terminal" class="terminal-link" style="width: 100%; height: 100%;"></div>');
 });
 GoldenComponentMap.set('fileBrowser', function (container, state) {
     container.getElement().html('<div id="fileBrowser" style="width: 100%; height: 100%;"></div>');
@@ -612,6 +612,7 @@ function connectionTerminalWS(terminalTerm) {
     socket.onclose = function () {
         $("#termianl-title").attr('class', 'fas fa-unlink');
         $("#termianl-title").attr('data-context', 'true');
+        $("#terminal").attr('class', 'terminal-unlink');
         $("#terminal").attr('data-context', 'true');
         terminalTerm.write('\r\n \r\n');
         terminalTerm.write("\u001b[31;2m  连接已断开,请呼出右键菜单点击重连 ! ! ! \u001b[0;39m \r\n \r\n");
@@ -619,11 +620,47 @@ function connectionTerminalWS(terminalTerm) {
     };
     socket.onopen = function () {
         $("#termianl-title").attr('class', 'fas fa-link');
+        $("#terminal").attr('class', 'terminal-link');
         console.log("WebSocket connection opened.");
         terminalTerm.clear();
     };
+ /*   // 从 WebSocket 接收数据，写入终端
+    socket.addEventListener('message', (event) => {
+        terminalTerm.write(event.data);
+    });
+
+    // 将终端输入发送到 WebSocket
+    terminalTerm.onData((data) => {
+        socket.send(data);
+    });*/
     const attachAddon = new xterm.AttachAddon(socket);
     terminalTerm.loadAddon(attachAddon);
+    // 允许右键菜单
+    terminalTerm.attachCustomKeyEventHandler((event) => {
+        //console.log('terminalTerm event', event);
+        // 判断是否是 F5 键（注意 key 和 code 的区别）
+        const isF5 = event.key === 'F5' || event.code === 'F5';
+
+        // 判断是否按下 Ctrl（Windows/Linux）或 Cmd（macOS）
+        const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+
+        if (isF5 && isCtrlOrCmd) {
+            //console.log('用户按下了 Ctrl + F5');
+            // 阻止默认行为（可选）
+            //event.preventDefault();
+            // 执行你的自定义逻辑
+            return false; // 返回 false 表示我们已经处理了这个事件
+        }
+
+        if (isF5 && !isCtrlOrCmd) {
+            //console.log('用户按下了 F5');
+            // 阻止默认行为（可选）
+            //event.preventDefault();
+            // 执行你的自定义逻辑
+            return false;
+        }
+        return true; // 其他按键由 AttachAddon 处理
+    });
 }
 
 // 销毁编译项目

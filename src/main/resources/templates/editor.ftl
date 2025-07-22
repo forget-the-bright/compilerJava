@@ -92,13 +92,10 @@
             term: resultWindowTerm,
             fitAddon: resultWindowFitAddon
         } = getTermAndFitAddon(10000, $('#result')[0], new xterm.WebLinksAddon((event, uri) => {
-            // 这里可以对 uri 进行任何你需要的处理
-            // let modifiedUri = modifyUri(uri);
             // 阻止默认行为
             event.preventDefault();
             // 使用 URL 对象解析 URI
             const url = new URL(uri);
-
             // 获取端口后面的完整路径，包含查询参数和片段标识符
             let actualPort = url.port;
             if (actualPort === "" && url.protocol === "https:") {
@@ -109,12 +106,6 @@
             const fullPath = "/proxy/" + actualPort + url.pathname + url.search + url.hash
             console.log('uri', url.port)
             window.open(window.baseUrl + fullPath, '_blank')
-
-            // 打开修改后的 URI
-            // window.open(modifiedUri, '_blank');
-
-            // 阻止默认行为
-            // event.preventDefault();
         }));
         const {
             term: terminalTerm,
@@ -141,7 +132,7 @@
         connectionTerminalWS(terminalTerm);
         // 初始化右键菜单（绑定到所有 .context-menu-target 元素）
         $.contextMenu({
-            selector: '.fa-unlink,#terminal',
+            selector: '.fa-unlink,.terminal-unlink',
             trigger: 'right', // 触发方式是右键点击
             build: function ($triggerElement, e) {
                 // 判断是否满足条件（比如 data-context 是否为 "true"）
